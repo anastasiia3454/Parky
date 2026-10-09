@@ -83,3 +83,32 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
         map.fitBounds(group.getBounds().pad(0.15));
     }
 }
+
+async function drawDriveRoute(startLat, startLon, parkLat, parkLon) {
+    if (currentDriveRouteLayer) {
+        map.removeLayer(currentDriveRouteLayer);
+    }
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.routes && data.routes.length > 0) {
+            const routeGeoJSON = data.routes[0].geometry;
+
+            currentDriveRouteLayer = L.geoJSON(routeGeoJSON, {
+                style: {
+                    color: '#00bfff',
+                    weight: 5,
+                    opacity: 0.8
+                }
+            }).addTo(map);
+
+            map.fitBounds(currentDriveRouteLayer.getBounds().pad(0.1));
+        }
+    } catch (error) {
+        console.error("Fehler beim Abrufen der Auto-Route:", error);
+    }
+}
