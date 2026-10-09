@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parky – Smart P+R Routing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Shrikhand&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/frontend/styles.css" />
+</head>
+
+<body>
+    <div class="welcome-window" id="welcomeModal">
+        <div class="welcome-card">
+            <div class="logo">
+                <img src="./images/Parky.png" alt="Parky Logo">
+                <h2>Park & Ride. Einfach. Schnell.</h2>
+            </div>
+            <button id="closeModal" class="btn-primary-large">Los fahren!</button>
+        </div>
+    </div>
+    <div id="layout">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <img src="./images/Parky.png" alt="Parky Logo" class="brand-logo">
+            </div>
+
+            <form id="routeForm">
+                <div class="input-group">
+                    <label for="start">
+                        <span class="dot start-dot"></span> Startadresse
+                    </label>
+                    <input type="text" id="start" placeholder="z. B. Hauptstraße 10, Berlin" required autocomplete="off">
+                </div>
+
+                <div class="input-group">
+                    <label for="destination">
+                        <span class="dot dest-dot"></span> Zieladresse
+                    </label>
+                    <input type="text" id="destination" placeholder="z. B. Friedrichstraße 10, Berlin" required autocomplete="off">
+                </div>
+
+                <div class="input-group slider-group">
+                    <div class="slider-header">
+                        <label for="weightSpeed">Priorität</label>
+                        <span class="slider-value-badge" id="sliderBadge">Balance</span>
+                    </div>
+                    <div class="slider-labels">
+                        <span>Schnelligkeit</span>
+                        <span>Komfort</span>
+                    </div>
+                    <input type="range" id="weightSpeed" min="1" max="5" value="3">
+                </div>
+
+                <button type="submit" id="btnSearch" class="btn-submit">
+                    <span>Parkplätze & Routen suchen</span>
+                </button>
+            </form>
+
+            <div class="divider"></div>
+            <div id="results" class="results-container">
+                <div class="empty-state">
+                    <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
+                </div>
+            </div>
+        </aside>
+        <main id="map"></main>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/frontend/js/app.js"></script>
+    <script src="/frontend/js/map.js"></script>
+</body>
+
+</html>

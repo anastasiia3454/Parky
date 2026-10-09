@@ -1,0 +1,346 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Shrikhand&display=swap');
+
+:root {
+    --primary: #ff751f;
+    --primary-hover: #e05e0d;
+    --bg-dark: #111827;
+    --surface: #ffffff;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    --radius-lg: 16px;
+    --radius-md: 10px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background-color: #f3f4f6;
+    color: var(--text-main);
+}
+
+#layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+}
+
+/* Sidebar Styling */
+#sidebar {
+    width: 380px;
+    background: var(--surface);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.brand-logo {
+    height: 48px;
+    object-fit: contain;
+}
+
+/* Form inputs */
+.input-group {
+    margin-bottom: 18px;
+}
+
+.input-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.start-dot { background-color: #111827; }
+.dest-dot { background-color: #ef4444; }
+
+.input-group input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background-color: #f9fafb;
+    outline: none;
+}
+
+.input-group input[type="text"]:focus {
+    border-color: var(--primary);
+    background-color: var(--surface);
+    box-shadow: 0 0 0 4px rgba(255, 117, 31, 0.15);
+}
+
+/* Slider Customizing */
+.slider-group {
+    background-color: #f9fafb;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.slider-value-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #e5e7eb;
+    padding: 2px 8px;
+    border-radius: 12px;
+    color: var(--text-main);
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* Submit Button */
+.btn-submit {
+    width: 100%;
+    padding: 14px;
+    background-color: var(--bg-dark);
+    color: white;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    margin-top: 8px;
+}
+
+.btn-submit:hover {
+    background-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 117, 31, 0.3);
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--border);
+    margin: 24px 0;
+}
+
+/* Results Section */
+.results-container {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    color: var(--text-muted);
+    line-height: 1.5;
+    font-size: 0.88rem;
+}
+
+/* Map area */
+#map {
+    flex: 1;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Welcome Overlay Screen */
+.welcome-window {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.welcome-window.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.welcome-card {
+    background: var(--surface);
+    padding: 40px 48px;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    max-width: 420px;
+    width: 90%;
+}
+
+.welcome-card img {
+    height: 80px;
+    margin-bottom: 16px;
+}
+
+.welcome-card h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+}
+
+.btn-primary-large {
+    width: 100%;
+    padding: 14px;
+    background-color: var(--primary);
+    color: white;
+    font-family: 'Shrikhand', cursive;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-large:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.02);
+}
+
+.leaflet-popup-content-wrapper {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+    padding: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #1f2937;
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.leaflet-popup-content b {
+    font-size: 0.95rem;
+    color: #111827;
+    display: inline-block;
+    margin-bottom: 6px;
+}
+
+/* Button im Popup */
+.leaflet-popup-content button {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #111827;
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.leaflet-popup-content button:hover {
+    background-color: #ff751f;
+    transform: translateY(-1px);
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+    color: #9ca3af;
+    padding: 8px 8px 0 0;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+    color: #111827;
+}
+
+#results {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#results p {
+    background-color: #f9fafb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Gefunden / Status-Badges */
+#results p[style*="color: green"] {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #047857 !important;
+    font-weight: 700;
+}
+
+#results p[style*="color: blue"] {
+    background-color: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    color: #1d4ed8 !important;
+    font-weight: 600;
+}
+
+#results p[style*="color: orange"]{
+    border-color: #fde68a;
+    background-color: #e05e0d;
+    color: #ffffff;
+    font-weight: 600;
+}
