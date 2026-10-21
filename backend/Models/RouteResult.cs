@@ -1,7 +1,7 @@
-namespace Backend.Models
+namespace Backend.Models;
 
 // Liste für Frontend
-public class RouteResult 
+public class RouteResult
 {
     // Name des Parkingplatzes
     public string ParkingName { get; set; } = "";
@@ -13,14 +13,14 @@ public class RouteResult
     public int ParkingMinutes { get; set; }
 
     // ÖPNV Fahrzeit
-    public int TransitMinutes { get; set;}
+    public int TransitMinutes { get; set; }
 
     // Fußweg vom Bahnhof zum Ziel
     public int WalkingMinutes { get; set; }
 
 
     // Automatische Berechnung Gesamtzeit:
-    public int TotalMinutes => DriveMinutes  + ParkingMinutes + TransitMinutes + WalkingMinutes;
+    public int TotalMinutes => DriveMinutes + ParkingMinutes + TransitMinutes + WalkingMinutes;
 
 
     // Linie für die Autofahrt auf der Karte

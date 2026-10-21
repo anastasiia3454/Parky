@@ -22,6 +22,8 @@ app.UseCors();
 
 string[] overpassEndpoints = new[]
 {
+    "https://overpass.openstreetmap.fr/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
     "https://lz4.overpass-api.de/api/interpreter",
     "https://z.overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter"
@@ -36,182 +38,192 @@ app.MapGet("/api/parkandride", async (
     IHttpClientFactory clientFactory, 
     IMemoryCache cache) =>
 {
-    string cacheKey = $"pr_eval_{Math.Round(lat, 3)}_{Math.Round(lon, 3)}";
-
-    if (!cache.TryGetValue(cacheKey, out List<ParkingCandidate>? candidates) || candidates == null)
+    try
     {
-        var client = clientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(20);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
+        string cacheKey = $"pr_eval_{Math.Round(lat, 3)}_{Math.Round(lon, 3)}";
 
-        string latStr = lat.ToString(CultureInfo.InvariantCulture);
-        string lonStr = lon.ToString(CultureInfo.InvariantCulture);
-
-        string overpassQuery = $"[out:json][timeout:15];(node[\"park_ride\"=\"yes\"](around:20000,{latStr},{lonStr});way[\"park_ride\"=\"yes\"](around:20000,{latStr},{lonStr}););out center;";
-
-        HttpResponseMessage? response = null;
-
-        foreach (var endpoint in overpassEndpoints)
+        if (!cache.TryGetValue(cacheKey, out List<ParkingCandidate>? candidates) || candidates == null)
         {
-            try
+            var client = clientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(20);
+            
+            // WICHTIG: User-Agent setzen, damit APIs die Anfrage nicht blockieren
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
+
+            string latStr = lat.ToString(CultureInfo.InvariantCulture);
+            string lonStr = lon.ToString(CultureInfo.InvariantCulture);
+
+            string overpassQuery = $"[out:json][timeout:15];(node[\"park_ride\"=\"yes\"](around:20000,{latStr},{lonStr});way[\"park_ride\"=\"yes\"](around:20000,{latStr},{lonStr}););out center;";
+
+            HttpResponseMessage? response = null;
+
+            foreach (var endpoint in overpassEndpoints)
             {
-                var formData = new Dictionary<string, string> { { "data", overpassQuery } };
-                var content = new FormUrlEncodedContent(formData);
-                var res = await client.PostAsync(endpoint, content);
-                if (res.IsSuccessStatusCode)
+                try
                 {
-                    response = res;
-                    break;
+                    var formData = new Dictionary<string, string> { { "data", overpassQuery } };
+                    var content = new FormUrlEncodedContent(formData);
+                    var res = await client.PostAsync(endpoint, content);
+                    if (res.IsSuccessStatusCode)
+                    {
+                        response = res;
+                        break;
+                    }
+                }
+                catch { continue; }
+            }
+
+            if (response == null)
+            {
+                return Results.Problem("Alle Overpass-Server sind aktuell überlastet.");
+            }
+
+            var jsonString = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(jsonString);
+
+            if (!doc.RootElement.TryGetProperty("elements", out var elements))
+            {
+                return Results.Ok(new { directCarRoute = (object?)null, parkings = new List<ParkingCandidate>() });
+            }
+
+            var rawCandidates = new List<ParkingCandidate>();
+
+            foreach (var element in elements.EnumerateArray())
+            {
+                double pLat = 0, pLon = 0;
+
+                if (element.TryGetProperty("lat", out var latProp))
+                {
+                    pLat = latProp.GetDouble();
+                    pLon = element.GetProperty("lon").GetDouble();
+                }
+                else if (element.TryGetProperty("center", out var centerProp))
+                {
+                    pLat = centerProp.GetProperty("lat").GetDouble();
+                    pLon = centerProp.GetProperty("lon").GetDouble();
+                }
+
+                string name = "P+R Parkplatz";
+                if (element.TryGetProperty("tags", out var tags) && tags.TryGetProperty("name", out var nameProp))
+                {
+                    name = nameProp.GetString() ?? name;
+                }
+
+                if (pLat != 0 && pLon != 0)
+                {
+                    rawCandidates.Add(new ParkingCandidate(name, pLat, pLon, 0, 0));
                 }
             }
-            catch { continue; }
-        }
 
-        if (response == null)
-        {
-            return Results.Problem("Fehler bei der Abfrage der Overpass API.");
-        }
-
-        var jsonString = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(jsonString);
-
-        if (!doc.RootElement.TryGetProperty("elements", out var elements))
-        {
-            return Results.Ok(new { directCarRoute = (object?)null, parkings = new List<ParkingCandidate>() });
-        }
-
-        var rawCandidates = new List<ParkingCandidate>();
-
-        foreach (var element in elements.EnumerateArray())
-        {
-            double pLat = 0, pLon = 0;
-
-            if (element.TryGetProperty("lat", out var latProp))
+            if (rawCandidates.Count == 0)
             {
-                pLat = latProp.GetDouble();
-                pLon = element.GetProperty("lon").GetDouble();
-            }
-            else if (element.TryGetProperty("center", out var centerProp))
-            {
-                pLat = centerProp.GetProperty("lat").GetDouble();
-                pLon = centerProp.GetProperty("lon").GetDouble();
+                return Results.Ok(new { directCarRoute = (object?)null, parkings = new List<ParkingCandidate>() });
             }
 
-            string name = "P+R Parkplatz";
-            if (element.TryGetProperty("tags", out var tags) && tags.TryGetProperty("name", out var nameProp))
+            var osrmCandidates = rawCandidates.Take(25).ToList();
+            string coordinatesString = $"{lonStr},{latStr}";
+            foreach (var cand in osrmCandidates)
             {
-                name = nameProp.GetString() ?? name;
+                string cLat = cand.Lat.ToString(CultureInfo.InvariantCulture);
+                string cLon = cand.Lon.ToString(CultureInfo.InvariantCulture);
+                coordinatesString += $";{cLon},{cLat}";
             }
 
-            if (pLat != 0 && pLon != 0)
+            string osrmUrl = $"https://router.project-osrm.org/table/v1/driving/{coordinatesString}?sources=0";
+
+            try
             {
-                rawCandidates.Add(new ParkingCandidate(name, pLat, pLon, 0, 0));
-            }
-        }
-
-        if (rawCandidates.Count == 0)
-        {
-            return Results.Ok(new { directCarRoute = (object?)null, parkings = new List<ParkingCandidate>() });
-        }
-
-        var osrmCandidates = rawCandidates.Take(25).ToList();
-        string coordinatesString = $"{lonStr},{latStr}";
-        foreach (var cand in osrmCandidates)
-        {
-            string cLat = cand.Lat.ToString(CultureInfo.InvariantCulture);
-            string cLon = cand.Lon.ToString(CultureInfo.InvariantCulture);
-            coordinatesString += $";{cLon},{cLat}";
-        }
-
-        string osrmUrl = $"https://router.project-osrm.org/table/v1/driving/{coordinatesString}?sources=0";
-
-        try
-        {
-            var osrmResponse = await client.GetAsync(osrmUrl);
-            if (osrmResponse.IsSuccessStatusCode)
-            {
-                var osrmJson = await osrmResponse.Content.ReadAsStringAsync();
-                using var osrmDoc = JsonDocument.Parse(osrmJson);
-
-                if (osrmDoc.RootElement.TryGetProperty("durations", out var durations))
+                var osrmResponse = await client.GetAsync(osrmUrl);
+                if (osrmResponse.IsSuccessStatusCode)
                 {
-                    var durationArray = durations[0];
+                    var osrmJson = await osrmResponse.Content.ReadAsStringAsync();
+                    using var osrmDoc = JsonDocument.Parse(osrmJson);
 
-                    for (int i = 0; i < osrmCandidates.Count; i++)
+                    if (osrmDoc.RootElement.TryGetProperty("durations", out var durations))
                     {
-                        if (i + 1 < durationArray.GetArrayLength() && durationArray[i + 1].ValueKind == JsonValueKind.Number)
+                        var durationArray = durations[0];
+
+                        for (int i = 0; i < osrmCandidates.Count; i++)
                         {
-                            osrmCandidates[i].DriveDurationSeconds = durationArray[i + 1].GetDouble();
+                            if (i + 1 < durationArray.GetArrayLength() && durationArray[i + 1].ValueKind == JsonValueKind.Number)
+                            {
+                                osrmCandidates[i].DriveDurationSeconds = durationArray[i + 1].GetDouble();
+                            }
                         }
                     }
                 }
             }
-        }
-        catch { }
+            catch { }
 
-        candidates = osrmCandidates
-            .Where(c => c.DriveDurationSeconds > 0)
-            .OrderBy(c => c.DriveDurationSeconds)
-            .Take(15)
-            .ToList();
+            candidates = osrmCandidates
+                .Where(c => c.DriveDurationSeconds > 0)
+                .OrderBy(c => c.DriveDurationSeconds)
+                .Take(15)
+                .ToList();
 
-        if (candidates.Count == 0)
-        {
-            candidates = rawCandidates.Take(15).ToList();
-        }
-
-        cache.Set(cacheKey, candidates, TimeSpan.FromMinutes(30));
-    }
-
-    DirectCarRoute? directCarRoute = null;
-    if (destLat.HasValue && destLon.HasValue)
-    {
-        var client = clientFactory.CreateClient();
-        string sLat = lat.ToString(CultureInfo.InvariantCulture);
-        string sLon = lon.ToString(CultureInfo.InvariantCulture);
-        string dLat = destLat.Value.ToString(CultureInfo.InvariantCulture);
-        string dLon = destLon.Value.ToString(CultureInfo.InvariantCulture);
-
-        string carRouteUrl = $"https://router.project-osrm.org/route/v1/driving/{sLon},{sLat};{dLon},{dLat}?overview=false";
-
-        try
-        {
-            var carRes = await client.GetAsync(carRouteUrl);
-            if (carRes.IsSuccessStatusCode)
+            if (candidates.Count == 0)
             {
-                var carJson = await carRes.Content.ReadAsStringAsync();
-                using var carDoc = JsonDocument.Parse(carJson);
-                if (carDoc.RootElement.TryGetProperty("routes", out var routes) && routes.GetArrayLength() > 0)
+                candidates = rawCandidates.Take(15).ToList();
+            }
+
+            cache.Set(cacheKey, candidates, TimeSpan.FromMinutes(30));
+        }
+
+        DirectCarRoute? directCarRoute = null;
+        if (destLat.HasValue && destLon.HasValue)
+        {
+            var client = clientFactory.CreateClient();
+            string sLat = lat.ToString(CultureInfo.InvariantCulture);
+            string sLon = lon.ToString(CultureInfo.InvariantCulture);
+            string dLat = destLat.Value.ToString(CultureInfo.InvariantCulture);
+            string dLon = destLon.Value.ToString(CultureInfo.InvariantCulture);
+
+            string carRouteUrl = $"https://router.project-osrm.org/route/v1/driving/{sLon},{sLat};{dLon},{dLat}?overview=false";
+
+            try
+            {
+                var carRes = await client.GetAsync(carRouteUrl);
+                if (carRes.IsSuccessStatusCode)
                 {
-                    var firstRoute = routes[0];
-                    double duration = firstRoute.GetProperty("duration").GetDouble();
-                    double distance = firstRoute.GetProperty("distance").GetDouble();
-                    directCarRoute = new DirectCarRoute(duration, distance);
+                    var carJson = await carRes.Content.ReadAsStringAsync();
+                    using var carDoc = JsonDocument.Parse(carJson);
+                    if (carDoc.RootElement.TryGetProperty("routes", out var routes) && routes.GetArrayLength() > 0)
+                    {
+                        var firstRoute = routes[0];
+                        double duration = firstRoute.GetProperty("duration").GetDouble();
+                        double distance = firstRoute.GetProperty("distance").GetDouble();
+                        directCarRoute = new DirectCarRoute(duration, distance);
+                    }
                 }
             }
+            catch { }
         }
-        catch { }
+
+        double wSpeed = weightSpeed ?? 0.5;
+        double wTransfers = 1.0 - wSpeed;
+
+        foreach (var cand in candidates)
+        {
+            double durationMinutes = cand.DriveDurationSeconds / 60.0;
+            cand.Score = (wSpeed * durationMinutes) + (wTransfers * (cand.Transfers * 10));
+        }
+
+        var sortedCandidates = candidates.OrderBy(c => c.Score).ToList();
+
+        return Results.Ok(new
+        {
+            directCarRoute = directCarRoute,
+            parkings = sortedCandidates
+        });
     }
-    double wSpeed = weightSpeed ?? 0.5;
-    double wTransfers = 1.0 - wSpeed;
-
-    foreach (var cand in candidates)
+    catch (Exception ex)
     {
-
-        double durationMinutes = cand.DriveDurationSeconds / 60.0;
+        // GIBT DEN ECHTEN FEHLER IM TERMINAL AUS
+        Console.WriteLine($"\n[KRITISCHER FEHLER]: {ex.Message}");
+        Console.WriteLine(ex.StackTrace);
         
-    
-        cand.Score = (wSpeed * durationMinutes) + (wTransfers * (cand.Transfers * 10));
+        return Results.Problem($"Serverfehler: {ex.Message}");
     }
-
-  
-    var sortedCandidates = candidates.OrderBy(c => c.Score).ToList();
-
-    return Results.Ok(new
-    {
-        directCarRoute = directCarRoute,
-        parkings = sortedCandidates
-    });
 });
 
 app.Run();

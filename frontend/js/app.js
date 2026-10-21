@@ -59,7 +59,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
         const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
         const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 100 : 0.5;
-        
+
         setStartMarker(startCoords.lat, startCoords.lon);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 

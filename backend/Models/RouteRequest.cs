@@ -1,25 +1,22 @@
 using System;
 
-namespace Backend.Models
+namespace Backend.Models;
 
-//Informationen das Frontend an das Backend schicken muss
-//beschreibt, was der Benutzer eingetippt hat
+
+public class RouteRequest
 {
-    public class RouteRequest
-    {
-        //Breitengrad Startpunkts
-        public double OriginLat { get; set; }
+    //Breitengrad Startpunkts
+    public double OriginLat { get; set; }
 
-        //Längengrad Startpunkts
-        public double OriginLon { get; set; }
+    //Längengrad Startpunkts
+    public double OriginLon { get; set; }
 
-        //Breitengrad Zielorts
-        public double TargetLat { get; set; }
+    //Breitengrad Zielorts
+    public double TargetLat { get; set; }
 
-        //Längengrad Zielorts
-        public double TargetLon { get; set; }
+    //Längengrad Zielorts
+    public double TargetLon { get; set; }
 
-        //Datum und Uhrzeit der geplanten Abfahrt
-        public DateTimeOffset DepartureTime { get; set; }
-    }
+    //Datum und Uhrzeit der geplanten Abfahrt
+    public DateTimeOffset DepartureTime { get; set; }
 }

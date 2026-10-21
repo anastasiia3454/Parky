@@ -1,4 +1,4 @@
-namespace Backend.Models
+namespace Backend.Models;
 
 // beschreibt die reine Fahrt mit Bus, S-Bahn oder U-Bahn 
 // von der Haltestelle (TransitStop) bis zum Ziel.
