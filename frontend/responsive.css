@@ -1,0 +1,266 @@
+/* ==========================================================================
+   Parky – responsive.css
+   Wird NACH styles.css eingebunden.
+   Desktop (> 1024px): unverändert, Sidebar links.
+   Tablet (768–1024px): Bottom-Sheet an der linken Seite.
+   Smartphone (< 768px): Bottom-Sheet über die volle Breite.
+   ========================================================================== */
+
+/* ---------- Basis: Sheet-Elemente sind auf Desktop unsichtbar ---------- */
+.sheet-grabber,
+.sheet-probe {
+    display: none;
+}
+
+/* Auf Desktop verhält sich der Wrapper, als gäbe es ihn nicht */
+.sheet-body {
+    display: contents;
+}
+
+/* ==========================================================================
+   Tablet + Smartphone
+   ========================================================================== */
+@media (max-width: 1024px) {
+
+    :root {
+        --peek: calc(104px + env(safe-area-inset-bottom, 0px));
+        /* sichtbare Höhe im eingeklappten Zustand */
+        --handle-h: 28px;
+        --sheet-radius: 28px;
+        --sheet-ease: cubic-bezier(0.22, 1, 0.36, 1);
+        --sheet-time: 0.55s;
+    }
+
+    html,
+    body {
+        height: 100vh;
+        height: 100dvh;
+        width: 100%;
+        overscroll-behavior: none;
+        overflow: hidden;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    #layout {
+        height: 100vh;
+        height: 100dvh;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    /* Karte füllt den gesamten Bildschirm */
+    #map {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        /* statt inset: 0 / auto: feste Größe */
+        height: 100%;
+        flex: none;
+        z-index: 0;
+    }
+
+    /* ---------- Das Sheet ---------- */
+    #sidebar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: min(88vh, 680px);
+        height: min(88dvh, 680px);
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        border-right: none;
+        border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+        box-shadow: 0 -10px 40px rgba(17, 24, 39, 0.22);
+        z-index: 1000;
+
+        /* eingeklappt: nur die "Peek"-Höhe schaut heraus */
+        transform: translate3d(0, calc(100% - var(--peek)), 0);
+        transition: transform var(--sheet-time) var(--sheet-ease);
+        will-change: transform;
+        backface-visibility: hidden;
+    }
+
+    #sidebar.is-expanded {
+        transform: translate3d(0, 0, 0);
+    }
+
+    /* Während des Ziehens folgt das Sheet 1:1 dem Finger */
+    #sidebar.is-dragging,
+    #sidebar.is-dragging .sheet-summary {
+        transition: none;
+    }
+
+    /* Messfühler, damit JS die aufgelöste Peek-Höhe (inkl. env()) auslesen kann */
+    .sheet-probe {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: var(--peek);
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    /* ---------- Griff + Zusammenfassung ---------- */
+    .sheet-grabber {
+        display: flex;
+        flex-direction: column;
+        flex: 0 0 auto;
+        cursor: grab;
+        touch-action: none;
+        /* verhindert, dass der Browser die Geste als Scrollen deutet */
+        user-select: none;
+        -webkit-user-select: none;
+        outline: none;
+    }
+
+    .sheet-grabber:active {
+        cursor: grabbing;
+    }
+
+    .sheet-grabber:focus-visible .sheet-handle {
+        background: var(--primary);
+    }
+
+    .sheet-handle-zone {
+        height: var(--handle-h);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sheet-handle {
+        width: 44px;
+        height: 5px;
+        border-radius: 3px;
+        background: #d1d5db;
+        transition: background-color 0.2s ease;
+    }
+
+    /* Die Zusammenfassung blendet sich mit dem Fortschritt (--p: 0 → 1) aus */
+    .sheet-summary {
+        --p: 0;
+        height: calc((var(--peek) - var(--handle-h)) * (1 - var(--p)));
+        opacity: calc(1 - var(--p) * 1.6);
+        padding: 0 24px env(safe-area-inset-bottom, 0px);
+        overflow: hidden;
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 1.45;
+        color: var(--text-main);
+        transition:
+            height var(--sheet-time) var(--sheet-ease),
+            opacity calc(var(--sheet-time) * 0.6) ease;
+    }
+
+    .sheet-summary span {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    #sidebar.is-expanded .sheet-summary {
+        --p: 1;
+    }
+
+    /* ---------- Inhalt (scrollbar) ---------- */
+    .sheet-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 4px 24px 16px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Logo wird im Sheet nicht gebraucht – die Karte soll im Vordergrund stehen */
+    .sidebar-header {
+        display: none;
+    }
+
+    /* Formular „auflösen", damit der orange Button ganz unten sitzen kann */
+    #routeForm {
+        display: contents;
+    }
+
+    .divider {
+        order: 5;
+        margin: 8px 0 16px;
+    }
+
+    #results {
+        order: 6;
+        flex: 1 0 auto;
+        margin-bottom: 16px;
+    }
+
+    .btn-submit {
+        order: 10;
+        position: sticky;
+        bottom: 4px;
+        flex: 0 0 auto;
+        margin-top: 0;
+        padding: 16px;
+        font-size: 1rem;
+        z-index: 1000;
+    }
+
+    /* 16px verhindert das automatische Hineinzoomen auf iOS */
+    .input-group input[type="text"] {
+        font-size: 16px;
+    }
+
+    /* Leaflet-Bedienelemente nicht unter das Sheet legen */
+    .leaflet-bottom {
+        margin-bottom: var(--peek);
+    }
+}
+
+/* ==========================================================================
+   Tablet: Karte sitzt an der linken Seite statt über die ganze Breite
+   (für rechts: left: auto; right: 16px;)
+   ========================================================================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+
+    #sidebar {
+        left: 16px;
+        right: auto;
+        width: 420px;
+        max-width: calc(100% - 32px);
+        height: min(84vh, 720px);
+        height: min(84dvh, 720px);
+    }
+
+    /* Zoom-Buttons wandern nach rechts, damit sie nicht vom Sheet verdeckt werden */
+    .leaflet-top.leaflet-left {
+        left: auto;
+        right: 0;
+    }
+
+    .leaflet-left .leaflet-control {
+        margin-left: 0;
+        margin-right: 10px;
+    }
+
+    .leaflet-bottom {
+        margin-bottom: 0;
+    }
+}
+
+/* ==========================================================================
+   Bewegung reduzieren, wenn vom System gewünscht
+   ========================================================================== */
+@media (max-width: 1024px) and (prefers-reduced-motion: reduce) {
+    :root {
+        --sheet-time: 0.01s;
+    }
+}
