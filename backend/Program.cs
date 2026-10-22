@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
+using Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +18,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 
+builder.Services.AddControllers();           
+builder.Services.AddScoped<TransitService>();
+
 var app = builder.Build();
 app.UseCors();
+
+app.MapControllers();
 
 string[] overpassEndpoints = new[]
 {
