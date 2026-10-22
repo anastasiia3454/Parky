@@ -29,6 +29,15 @@ body {
     color: var(--text-main);
 }
 
+#closeModal{
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: all 0.2s ease;
+}
+#closeModal:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 117, 31, 0.3);
+}
+
 #layout {
     display: flex;
     height: 100vh;

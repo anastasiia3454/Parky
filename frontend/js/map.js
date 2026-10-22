@@ -18,6 +18,31 @@ if (mapContainer && 'ResizeObserver' in window) {
 }
 window.addEventListener('resize', () => map.invalidateSize());
 
+const sheetQuery = window.matchMedia('(max-width: 1024px)');
+
+/**
+ * Abstände für Kartenausschnitt und Popup-Autopan:
+ * Auf Smartphone/Tablet verdeckt das eingeklappte Sheet unten einen Teil der Karte,
+ * oben rechts liegen die Meldungen (Toasts).
+ */
+function viewPadding() {
+    return sheetQuery.matches
+        ? { top: 70, bottom: 150, side: 24 }
+        : { top: 24, bottom: 24, side: 24 };
+}
+
+function fitToLayers(layers, extra = 0.1) {
+    if (!layers || layers.length === 0) return;
+
+    const pad = viewPadding();
+    const bounds = L.featureGroup(layers).getBounds().pad(extra);
+
+    map.fitBounds(bounds, {
+        paddingTopLeft: [pad.side, pad.top],
+        paddingBottomRight: [pad.side, pad.bottom]
+    });
+}
+
 function isValidCoord(value) {
     return typeof value === 'number' && isFinite(value);
 }
@@ -33,10 +58,13 @@ function attachPopup(marker, html, radius) {
         L.DomEvent.stopPropagation(e);
         map.invalidateSize();
 
+        const pad = viewPadding();
+
         L.popup({
             offset: [0, -radius],
             autoPan: true,
-            autoPanPadding: [20, 20],
+            autoPanPaddingTopLeft: [pad.side, pad.top],
+            autoPanPaddingBottomRight: [pad.side, pad.bottom],
             closeOnClick: true
         })
             .setLatLng(marker.getLatLng())
@@ -44,20 +72,6 @@ function attachPopup(marker, html, radius) {
             .openOn(map);
     });
 }
-
-map.on('popupopen', function (e) {
-    const btn = e.popup.getElement().querySelector('.route-btn');
-    if (!btn) return;
-
-    btn.addEventListener('click', function () {
-        drawDriveRoute(
-            parseFloat(btn.dataset.startLat),
-            parseFloat(btn.dataset.startLon),
-            parseFloat(btn.dataset.parkLat),
-            parseFloat(btn.dataset.parkLon)
-        );
-    });
-});
 
 function setStartMarker(lat, lon) {
     if (!isValidCoord(lat) || !isValidCoord(lon)) return;
@@ -121,17 +135,11 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
 
         const minutes = Math.round(p.driveDurationSeconds / 60);
 
+        // Nur Informationen – die Route wird über die Gesamtrouten gewählt
         attachPopup(marker, `
             <b>${isBestOption ? '⭐ Bester P+R Platz: ' : ''}${escapeHtml(p.name)}</b><br>
-            Fahrzeit Auto: ca. ${minutes} Min.<br>
-            ${p.score ? `Score: ${p.score.toFixed(1)}<br>` : ''}<br>
-            <button class="route-btn"
-                    data-start-lat="${startLat}"
-                    data-start-lon="${startLon}"
-                    data-park-lat="${p.lat}"
-                    data-park-lon="${p.lon}">
-                Auto-Route anzeigen
-            </button>
+            Fahrzeit Auto: ca. ${minutes} Min.
+            ${p.score ? `<br>Score: ${p.score.toFixed(1)}` : ''}
         `, radius);
 
         parkingMarkers.push(marker);
@@ -141,18 +149,15 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
     if (startMarker) allLayers.push(startMarker);
     if (destinationMarker) allLayers.push(destinationMarker);
 
-    if (allLayers.length > 0) {
-        const group = L.featureGroup(allLayers);
-        map.fitBounds(group.getBounds().pad(0.15));
-    }
+    fitToLayers(allLayers, 0.1);
 }
 
 async function drawFullIntermodalRoute(
-    startLat, startLon, 
-    parkLat, parkLon, 
-    destLat, destLon, 
-    polylineTransit = null, 
-    targetStopLat = null, 
+    startLat, startLon,
+    parkLat, parkLon,
+    destLat, destLon,
+    polylineTransit = null,
+    targetStopLat = null,
     targetStopLon = null
 ) {
     // 1. Vorherige Routen-Ebenen von der Karte entfernen
@@ -213,7 +218,6 @@ async function drawFullIntermodalRoute(
     }
 
     // 4. FUSSWEG: Ziel-Haltestelle -> Endziel (ORANGE GESTRICHELT via OSRM)
-    // Startet exakt an der Ausstiegshaltestelle
     const walkStartLat = isValidCoord(targetStopLat) ? targetStopLat : parkLat;
     const walkStartLon = isValidCoord(targetStopLon) ? targetStopLon : parkLon;
 
@@ -243,8 +247,5 @@ async function drawFullIntermodalRoute(
     if (currentTransitRouteLayer) activeLayers.push(currentTransitRouteLayer);
     if (currentWalkRouteLayer) activeLayers.push(currentWalkRouteLayer);
 
-    if (activeLayers.length > 0) {
-        const group = L.featureGroup(activeLayers);
-        map.fitBounds(group.getBounds().pad(0.15));
-    }
+    fitToLayers(activeLayers, 0.1);
 }

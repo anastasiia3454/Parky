@@ -41,25 +41,130 @@ async function geocodeAddress(address) {
     };
 }
 
+
+// ==========================================
+// TOAST-MELDUNGEN (oben rechts, blenden sich selbst aus)
+// ==========================================
+
+const TOAST_ICONS = {
+    info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    success: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 9.8"/></svg>',
+    warning: '<svg viewBox="0 0 24 24"><path d="M12 4l9 16H3L12 4z"/><path d="M12 10v4M12 17h.01"/></svg>',
+    error: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'
+};
+
+function getToastRegion() {
+    let region = document.getElementById('toastRegion');
+    if (!region) {
+        region = document.createElement('div');
+        region.id = 'toastRegion';
+        region.className = 'toast-region';
+        region.setAttribute('aria-live', 'polite');
+        document.body.appendChild(region);
+    }
+    return region;
+}
+
+/**
+ * Zeigt eine Meldung oben rechts.
+ * type:     'info' (blau) | 'success' (grün) | 'warning' (orange) | 'error' (rot)
+ * duration: Anzeigedauer in ms (0 = bleibt, bis close() aufgerufen wird)
+ * loading:  zeigt einen Spinner statt des Icons
+ * Rückgabe: { el, update(message, options), close() }
+ */
+function showToast(message, options = {}) {
+    const region = getToastRegion();
+    const el = document.createElement('div');
+    const icon = document.createElement('span');
+    const text = document.createElement('span');
+
+    icon.className = 'toast__icon';
+    icon.setAttribute('aria-hidden', 'true');
+    text.className = 'toast__text';
+    el.append(icon, text);
+
+    let state = { type: 'info', loading: false, duration: 4000, ...options };
+    if (state.loading && options.duration === undefined) state.duration = 0;
+
+    let timer = null;
+    let closed = false;
+
+    function render(msg) {
+        const visible = el.classList.contains('is-visible');
+        el.className = `toast toast--${state.type}${visible ? ' is-visible' : ''}`;
+        el.setAttribute('role', state.type === 'error' ? 'alert' : 'status');
+        icon.innerHTML = state.loading
+            ? '<span class="toast__spinner"></span>'
+            : (TOAST_ICONS[state.type] || TOAST_ICONS.info);
+        text.textContent = msg;
+    }
+
+    function schedule() {
+        clearTimeout(timer);
+        if (state.duration > 0) timer = setTimeout(close, state.duration);
+    }
+
+    function close() {
+        if (closed) return;
+        closed = true;
+        clearTimeout(timer);
+        el.classList.remove('is-visible');
+        setTimeout(() => el.remove(), 400);
+    }
+
+    function update(newMessage, newOptions = {}) {
+        if (closed) return;
+        const durationGiven = newOptions.duration !== undefined;
+        state = { ...state, ...newOptions };
+        if (!state.loading && !durationGiven && newOptions.loading === false) state.duration = 4000;
+        render(newMessage);
+        schedule();
+    }
+
+    render(message);
+    region.appendChild(el);
+
+    // Maximal 4 Meldungen gleichzeitig
+    while (region.children.length > 4) region.firstElementChild.remove();
+
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-visible')));
+    el.addEventListener('click', close);
+    schedule();
+
+    return { el, update, close };
+}
+
+
+// ==========================================
+// SUCHE
+// ==========================================
+
+// true = die beste Gesamtroute wird nach der Berechnung automatisch auf der Karte gezeigt
+const AUTO_SELECT_BEST_ROUTE = true;
+
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const submitBtn = document.getElementById('btnSearch');
+    const resultsDiv = document.getElementById('results');
     const startText = document.getElementById('start').value;
     const destText = document.getElementById('destination').value;
 
-    document.getElementById('results').innerHTML = `<p>Adresse wird gesucht...</p>`;
+    resultsDiv.innerHTML = '';
+    if (submitBtn) submitBtn.classList.add('loading');
+
+    const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
 
     try {
         const startCoords = await geocodeAddress(startText);
         const destCoords = await geocodeAddress(destText);
 
-        setStartMarker(startCoords.lat, startCoords.lon);
-
-        document.getElementById('results').innerHTML = `
-            <p><b>Start:</b> ${startCoords.displayName}</p>
-            <p><b>Ziel:</b> ${destCoords.displayName}</p>
-            <p style="color: blue; margin-top: 10px;">Suche optimale P+R Parkplätze...</p>
+        resultsDiv.innerHTML = `
+            <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
+            <p><b>Ziel:</b> ${escapeHtml(destCoords.displayName)}</p>
         `;
+
+        status.update('Suche optimale P+R-Parkplätze …');
 
         const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
         const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 100 : 0.5;
@@ -77,21 +182,33 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         );
 
         if (parkings && parkings.length > 0) {
-            document.getElementById('results').innerHTML += `
-                <p style="color: green;">${parkings.length} P+R Parkplatz/Plätze gefunden!</p>
-            `;
+            const n = parkings.length;
+            status.update(
+                n === 1 ? '1 P+R-Parkplatz gefunden' : `${n} P+R-Parkplätze gefunden`,
+                { type: 'success', loading: false, duration: 4000 }
+            );
         } else {
-            document.getElementById('results').innerHTML += `
-                <p style="color: orange;">Keine P+R Parkplätze im Umkreis von 20 km gefunden.</p>
-            `;
+            status.update('Keine P+R-Parkplätze im Umkreis von 20 km gefunden.', {
+                type: 'warning', loading: false, duration: 6000
+            });
         }
 
-        // NEU: Berechnet im Hintergrund die vollständige intermodale Route (Backend /api/Route/calculate)
-        await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
+        // Berechnet die vollständige intermodale Route (Backend /api/Route/calculate)
+        const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
+        try {
+            await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
+        } finally {
+            routeStatus.close();
+        }
 
     } catch (error) {
         console.error(error);
-        document.getElementById('results').innerHTML = `<p style="color: red;">Fehler bei der Suche oder API-Abfrage.</p>`;
+        const message = error && error.message && error.message.startsWith('Adresse nicht gefunden')
+            ? error.message
+            : 'Fehler bei der Suche oder API-Abfrage.';
+        status.update(message, { type: 'error', loading: false, duration: 6000 });
+    } finally {
+        if (submitBtn) submitBtn.classList.remove('loading');
     }
 });
 
@@ -130,8 +247,67 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
 
 
 // ======================================================
-// ZUSÄTZLICHE ERWEITERUNG (Gibt Daten von Route/calculate aus)
+// GESAMTROUTEN (Route/calculate) ALS KARTEN
 // ======================================================
+
+function formatDuration(totalMinutes) {
+    const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
+    const h = Math.floor(m / 60);
+    const rest = m % 60;
+    if (h === 0) return `${m} Min.`;
+    return rest === 0 ? `${h} Std.` : `${h} Std. ${rest} Min.`;
+}
+
+function buildRouteCard(route, index, isBest) {
+    const num = (v) => Math.max(0, Math.round(Number(v) || 0));
+
+    const segments = [
+        { key: 'drive', label: 'Auto', minutes: num(route.driveMinutes) },
+        { key: 'park', label: 'Parken', minutes: num(route.parkingBufferMinutes) },
+        { key: 'transit', label: 'ÖPNV', minutes: num(route.transitMinutes) },
+        { key: 'walk', label: 'Fußweg', minutes: num(route.walkingMinutes) }
+    ];
+
+    const bar = segments
+        .filter(s => s.minutes > 0)
+        .map(s => `<span class="route-card__seg route-card__seg--${s.key}" style="flex-grow:${s.minutes}"></span>`)
+        .join('');
+
+    const legend = segments
+        .map(s => `
+            <li>
+                <i class="route-card__dot route-card__seg--${s.key}"></i>
+                <span>${s.label}</span>
+                <b>${s.minutes} Min.</b>
+            </li>`)
+        .join('');
+
+    const badge = isBest ? `
+        <span class="route-card__badge">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2.8 14.9 8.7 21.4 9.6 16.7 14.2 17.8 20.7 12 17.6 6.2 20.7 7.3 14.2 2.6 9.6 9.1 8.7"/></svg>
+            Schnellste Route
+        </span>` : '';
+
+    const card = document.createElement('article');
+    card.className = 'route-card' + (isBest ? ' is-best' : '');
+    card.innerHTML = `
+        <header class="route-card__head">
+            <div>
+                <span class="route-card__option">Option ${index + 1}</span>
+                <span class="route-card__place">${escapeHtml(route.parkingName)}</span>
+            </div>
+            <div class="route-card__total">
+                ${formatDuration(route.totalMinutes)}
+                <small>Gesamtzeit</small>
+            </div>
+        </header>
+        ${badge}
+        <div class="route-card__bar" aria-hidden="true">${bar}</div>
+        <ul class="route-card__legend">${legend}</ul>
+        <button type="button" class="route-card__btn">Auswählen</button>
+    `;
+    return card;
+}
 
 async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
     try {
@@ -149,76 +325,79 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
 
         if (!response.ok) {
             console.error("Fehler bei der Anfrage an den RouteController");
+            showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
             return;
         }
 
         const routes = await response.json();
         const resultsDiv = document.getElementById('results');
 
-        // Falls keine Routen im Array enthalten sind
+        // Vorherige Routenergebnisse aufräumen
+        const existingContainer = document.getElementById('intermodal-results-container');
+        if (existingContainer) existingContainer.remove();
+
         if (!routes || routes.length === 0) {
-            resultsDiv.innerHTML += '<p style="color: #dc2626; margin-top: 10px;">⚠️ Keine passenden ÖPNV-Routen für diese Parkplätze gefunden.</p>';
+            showToast('Keine passenden ÖPNV-Routen für diese Parkplätze gefunden.', { type: 'warning', duration: 6000 });
             return;
         }
 
+        // Index der schnellsten Route (bei Gleichstand die erste)
+        const bestIndex = routes.reduce(
+            (best, r, i) => (Number(r.totalMinutes) < Number(routes[best].totalMinutes) ? i : best),
+            0
+        );
 
-        // Vorherige Routenergebnisse aufräumen, falls vorhanden
-        const existingContainer = document.getElementById('intermodal-results-container');
-        if (existingContainer) {
-            existingContainer.remove();
-        }
+        const container = document.createElement('section');
+        container.id = 'intermodal-results-container';
+        container.className = 'routes';
+        container.innerHTML = `
+            <div class="routes__head">
+                <h3 class="routes__title">Gesamtrouten</h3>
+                <span class="routes__sub">Auto, ÖPNV und Fußweg</span>
+            </div>
+        `;
 
-        if (routes && routes.length > 0) {
-            const container = document.createElement('div');
-            container.id = 'intermodal-results-container';
-            container.style.marginTop = '15px';
-            container.innerHTML = '<b>Berechnete Gesamtrouten (Auto + ÖPNV + Fußweg):</b>';
+        const cards = [];
 
-            routes.forEach((route, idx) => {
-                const routeEl = document.createElement('div');
-                routeEl.className = 'route-option-card';
-                routeEl.style.cssText = 'background:#f3f4f6; padding:10px; border-radius:8px; margin-top:8px; font-size:13px; cursor:pointer; border:2px solid transparent; transition: all 0.2s;';
-
-                routeEl.innerHTML = `
-                    <b style="color:#111827;">Option ${idx + 1}: ${escapeHtml(route.parkingName)}</b><br>
-                    🚗 ${route.driveMinutes} Min | 🅿️ ${route.parkingBufferMinutes} Min | 🚆 ${route.transitMinutes} Min | 🚶 ${route.walkingMinutes} Min<br>
-                    <b style="color:#1d4ed8;">⏱️ Gesamt: ${route.totalMinutes} Min.</b>
-                    <br><span style="font-size:11px; color:#6b7280;">👉 Klicken, um Gesamtroute auf der Karte zu sehen</span>
-                `;
-
-                // Erst beim Klick auf die Option wird die Route auf der Karte gezeichnet
-                routeEl.addEventListener('click', () => {
-                    document.querySelectorAll('.route-option-card').forEach(el => el.style.borderColor = 'transparent');
-                    routeEl.style.borderColor = '#2563eb';
-
-                    // Daten aus dem Backend (RouteResult) auslesen
-                    const parkLat = route.parkingLat;
-                    const parkLon = route.parkingLon;
-                    const polylineTransit = route.polylineTransit;
-                    const targetStopLat = route.targetStopLat;
-                    const targetStopLon = route.targetStopLon;
-
-                    if (typeof drawFullIntermodalRoute === 'function') {
-                        drawFullIntermodalRoute(
-                            originLat,
-                            originLon,
-                            parkLat,
-                            parkLon,
-                            targetLat,
-                            targetLon,
-                            polylineTransit,
-                            targetStopLat,
-                            targetStopLon
-                        );
-                    }
-                });
-
-                container.appendChild(routeEl);
+        const selectRoute = (route, card) => {
+            cards.forEach(c => {
+                const isSelected = c === card;
+                c.classList.toggle('is-selected', isSelected);
+                c.querySelector('.route-card__btn').textContent = isSelected ? 'Ausgewählt' : 'Auswählen';
             });
 
-            resultsDiv.appendChild(container);
+            if (typeof drawFullIntermodalRoute === 'function') {
+                drawFullIntermodalRoute(
+                    originLat,
+                    originLon,
+                    route.parkingLat,
+                    route.parkingLon,
+                    targetLat,
+                    targetLon,
+                    route.polylineTransit,
+                    route.targetStopLat,
+                    route.targetStopLon
+                );
+            }
+
+            // Für das Bottom-Sheet auf Smartphone/Tablet: einklappen, damit die Karte frei wird
+            document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
+        };
+
+        routes.forEach((route, idx) => {
+            const card = buildRouteCard(route, idx, idx === bestIndex);
+            card.addEventListener('click', () => selectRoute(route, card));
+            cards.push(card);
+            container.appendChild(card);
+        });
+
+        resultsDiv.appendChild(container);
+
+        if (AUTO_SELECT_BEST_ROUTE) {
+            selectRoute(routes[bestIndex], cards[bestIndex]);
         }
     } catch (err) {
         console.error("Fehler bei der intermodalen Routenberechnung:", err);
+        showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
     }
 }

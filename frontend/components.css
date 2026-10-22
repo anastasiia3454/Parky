@@ -1,0 +1,331 @@
+/* ==========================================================================
+   Parky – components.css
+   Einbinden NACH styles.css und responsive.css.
+   Enthält: Toast-Meldungen (oben rechts) und Routen-Karten.
+   ========================================================================== */
+
+:root {
+    --route-drive: #00bfff;    /* identisch mit der Linienfarbe auf der Karte */
+    --route-park: #9ca3af;
+    --route-transit: #8b5cf6;
+    --route-walk: #f97316;
+    --ui-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ==========================================================================
+   Toast-Meldungen
+   ========================================================================== */
+.toast-region {
+    position: fixed;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    right: 16px;
+    z-index: 5000;                 /* über Sidebar/Sheet, unter dem Willkommensfenster */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    width: min(360px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+    padding: 11px 14px;
+    border: 1px solid;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.35;
+    cursor: pointer;
+    box-shadow: 0 10px 25px -8px rgba(17, 24, 39, 0.25);
+
+    /* Ausgangszustand = Zustand beim Verschwinden */
+    opacity: 0;
+    transform: translate3d(28px, 0, 0);
+    transition: opacity 0.3s ease, transform 0.45s var(--ui-ease);
+}
+
+.toast.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+}
+
+.toast__icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+}
+
+.toast__icon svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.toast__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: toastSpin 0.7s linear infinite;
+}
+
+@keyframes toastSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* Farben (wie die bisherigen Status-Blöcke) */
+.toast--info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.toast--success {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #047857;
+}
+
+.toast--warning {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #c2410c;
+}
+
+.toast--error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+/* Tablet: Zoom-Buttons liegen oben rechts, daher etwas nach innen rücken */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .toast-region {
+        right: 64px;
+        width: min(360px, calc(100vw - 96px));
+    }
+}
+
+/* ==========================================================================
+   Gesamtrouten
+   ========================================================================== */
+.routes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 6px;
+    animation: routesFade 0.4s ease both;
+}
+
+@keyframes routesFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.routes__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.routes__title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--bg-dark);
+}
+
+.routes__sub {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.route-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.route-card:hover {
+    border-color: #fdba74;
+    box-shadow: var(--shadow-sm);
+}
+
+.route-card.is-selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(255, 117, 31, 0.15);
+}
+
+/* Kopfzeile: Option links, Gesamtzeit rechts in Orange */
+.route-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.route-card__option {
+    display: block;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--bg-dark);
+}
+
+.route-card__place {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.route-card__total {
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: right;
+    white-space: nowrap;
+    color: var(--primary);
+}
+
+.route-card__total small {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Stern für die schnellste Route */
+.route-card__badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    background: #fff4ec;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary-hover);
+}
+
+.route-card__badge svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+/* Zeitbalken: Länge der Abschnitte entspricht ihrer Dauer */
+.route-card__bar {
+    display: flex;
+    gap: 3px;
+    height: 8px;
+}
+
+.route-card__seg {
+    flex-basis: 0;
+    min-width: 6px;
+    border-radius: 4px;
+}
+
+.route-card__seg--drive   { background: var(--route-drive); }
+.route-card__seg--park    { background: var(--route-park); }
+.route-card__seg--transit { background: var(--route-transit); }
+.route-card__seg--walk    { background: var(--route-walk); }
+
+/* Legende mit den einzelnen Zeiten */
+.route-card__legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    list-style: none;
+}
+
+.route-card__legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.route-card__legend b {
+    margin-left: auto;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.route-card__dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* Orange „Auswählen"-Button */
+.route-card__btn {
+    width: 100%;
+    padding: 11px 14px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.route-card__btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.route-card__btn:focus-visible {
+    outline: 3px solid rgba(255, 117, 31, 0.4);
+    outline-offset: 2px;
+}
+
+.route-card.is-selected .route-card__btn {
+    background: var(--bg-dark);
+}
+
+.route-card.is-selected .route-card__btn::before {
+    content: "✓ ";
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast,
+    .routes,
+    .route-card,
+    .route-card__btn {
+        transition-duration: 0.01s;
+        animation-duration: 0.01s;
+    }
+}
