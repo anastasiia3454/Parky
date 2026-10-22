@@ -28,4 +28,5 @@ public class RouteResult
 
     // Linie für die ÖPNV Fahrt auf der Karte
     public string PolylineTransit { get; set; } = "";
+    public int ParkingBufferMinutes { get; set; }
 }

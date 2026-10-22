@@ -54,7 +54,7 @@ namespace Backend.Services
                 using var response = await _httpClient.GetAsync(url);
                 if (!response.IsSuccessStatusCode) return null;
 
-                var jsonDoc = await response.ContentReadAsStreamAsync();
+                var jsonDoc = await response.Content.ReadAsStreamAsync();
                 using var doc = await JsonDocument.ParseAsync(jsonDoc);
                 var root = doc.RootElement;
                 if (!root.TryGetProperty("journeys", out var journeys) || journeys.GetArrayLength() == 0) return null;
