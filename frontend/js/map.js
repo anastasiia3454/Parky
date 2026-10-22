@@ -249,3 +249,15 @@ async function drawFullIntermodalRoute(
 
     fitToLayers(activeLayers, 0.1);
 }
+
+function clearRouteLayers() {
+    [currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer].forEach(layer => {
+        if (layer) map.removeLayer(layer);
+    });
+    currentDriveRouteLayer = null;
+    currentTransitRouteLayer = null;
+    currentWalkRouteLayer = null;
+
+    parkingMarkers.forEach(marker => map.removeLayer(marker));
+    parkingMarkers = [];
+}

@@ -153,6 +153,8 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     resultsDiv.innerHTML = '';
     if (submitBtn) submitBtn.classList.add('loading');
 
+    if (typeof clearRouteLayers === 'function') clearRouteLayers();
+
     const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
 
     try {
