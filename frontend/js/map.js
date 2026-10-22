@@ -9,7 +9,8 @@ let startMarker = null;
 let destinationMarker = null;
 let parkingMarkers = [];
 let currentDriveRouteLayer = null;
-
+let currentTransitRouteLayer = null;
+let currentWalkRouteLayer = null;
 
 const mapContainer = document.getElementById('map');
 if (mapContainer && 'ResizeObserver' in window) {
@@ -38,9 +39,9 @@ function attachPopup(marker, html, radius) {
             autoPanPadding: [20, 20],
             closeOnClick: true
         })
-        .setLatLng(marker.getLatLng())
-        .setContent(html)
-        .openOn(map);
+            .setLatLng(marker.getLatLng())
+            .setContent(html)
+            .openOn(map);
     });
 }
 
@@ -57,7 +58,6 @@ map.on('popupopen', function (e) {
         );
     });
 });
-
 
 function setStartMarker(lat, lon) {
     if (!isValidCoord(lat) || !isValidCoord(lon)) return;
@@ -98,7 +98,6 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
 
     attachPopup(destinationMarker, `<b>Ziel:</b><br>${escapeHtml(name)}`, radius);
 }
-
 
 function displayParkingsOnMap(parkings, startLat, startLon) {
     map.invalidateSize();
@@ -148,34 +147,104 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
     }
 }
 
+async function drawFullIntermodalRoute(
+    startLat, startLon, 
+    parkLat, parkLon, 
+    destLat, destLon, 
+    polylineTransit = null, 
+    targetStopLat = null, 
+    targetStopLon = null
+) {
+    // 1. Vorherige Routen-Ebenen von der Karte entfernen
+    if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
+    if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
+    if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
 
-async function drawDriveRoute(startLat, startLon, parkLat, parkLon) {
-    if (currentDriveRouteLayer) {
-        map.removeLayer(currentDriveRouteLayer);
-        currentDriveRouteLayer = null;
+    currentDriveRouteLayer = null;
+    currentTransitRouteLayer = null;
+    currentWalkRouteLayer = null;
+
+    if (!isValidCoord(parkLat) || !isValidCoord(parkLon)) {
+        console.error("Ungültige Parkplatz-Koordinaten übergeben.");
+        return;
     }
 
-    const url = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
+    // 2. AUTO-ROUTE: Startadresse -> P+R Parkplatz (HELLBLAU via OSRM)
+    const driveUrl = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
 
     try {
-        const response = await fetch(url);
-        const data = await response.json();
+        const driveRes = await fetch(driveUrl);
+        const driveData = await driveRes.json();
 
-        if (data.routes && data.routes.length > 0) {
-            currentDriveRouteLayer = L.geoJSON(data.routes[0].geometry, {
+        if (driveData.routes && driveData.routes.length > 0) {
+            currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
                 style: {
-                    color: '#00bfff',
+                    color: '#00bfff', // Hellblau
                     weight: 5,
-                    opacity: 0.8
+                    opacity: 0.9
                 }
             }).addTo(map);
-
-            map.fitBounds(currentDriveRouteLayer.getBounds().pad(0.1));
         }
-    } catch (error) {
-        console.error('Fehler beim Abrufen der Auto-Route:', error);
+    } catch (err) {
+        console.error("Fehler beim Laden der Auto-Route:", err);
+    }
+
+    // 3. ÖPNV-ROUTE: Parkplatz -> Ziel-Haltestelle (LILA aus Backend-Polyline)
+    if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
+        try {
+            currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
+                color: '#8b5cf6', // Lila
+                weight: 5,
+                opacity: 0.85
+            }).addTo(map);
+        } catch (e) {
+            console.error("Fehler beim Dekodieren der ÖPNV-Polyline:", e);
+        }
+    } else {
+        // Luftlinie als Ersatz, falls Polyline leer ist (vom Parkplatz zur Ziel-Haltestelle)
+        const endLat = isValidCoord(targetStopLat) ? targetStopLat : destLat;
+        const endLon = isValidCoord(targetStopLon) ? targetStopLon : destLon;
+
+        currentTransitRouteLayer = L.polyline([[parkLat, parkLon], [endLat, endLon]], {
+            color: '#8b5cf6',
+            weight: 4,
+            dashArray: '6, 8'
+        }).addTo(map);
+    }
+
+    // 4. FUSSWEG: Ziel-Haltestelle -> Endziel (ORANGE GESTRICHELT via OSRM)
+    // Startet exakt an der Ausstiegshaltestelle
+    const walkStartLat = isValidCoord(targetStopLat) ? targetStopLat : parkLat;
+    const walkStartLon = isValidCoord(targetStopLon) ? targetStopLon : parkLon;
+
+    const walkUrl = `https://router.project-osrm.org/route/v1/foot/${walkStartLon},${walkStartLat};${destLon},${destLat}?overview=full&geometries=geojson`;
+
+    try {
+        const walkRes = await fetch(walkUrl);
+        const walkData = await walkRes.json();
+
+        if (walkData.routes && walkData.routes.length > 0) {
+            currentWalkRouteLayer = L.geoJSON(walkData.routes[0].geometry, {
+                style: {
+                    color: '#f97316', // Orange
+                    weight: 4,
+                    opacity: 0.9,
+                    dashArray: '5, 8'
+                }
+            }).addTo(map);
+        }
+    } catch (err) {
+        console.error("Fehler beim Laden des Fußwegs:", err);
+    }
+
+    // 5. Kartenausschnitt automatisch anpassen
+    const activeLayers = [];
+    if (currentDriveRouteLayer) activeLayers.push(currentDriveRouteLayer);
+    if (currentTransitRouteLayer) activeLayers.push(currentTransitRouteLayer);
+    if (currentWalkRouteLayer) activeLayers.push(currentWalkRouteLayer);
+
+    if (activeLayers.length > 0) {
+        const group = L.featureGroup(activeLayers);
+        map.fitBounds(group.getBounds().pad(0.15));
     }
 }
-
-window.addEventListener('load', () => map.invalidateSize());
-setTimeout(() => map.invalidateSize(), 300);
