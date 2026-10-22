@@ -1,0 +1,10 @@
+POST http://localhost:5000/api/Route/calculate
+Content-Type: application/json
+
+{
+  "originLat": 52.5668,
+  "originLon": 13.4103,
+  "targetLat": 52.4750,
+  "targetLon": 13.3650,
+  "departureTime": "2026-10-22T10:00:00"
+}

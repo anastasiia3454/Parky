@@ -7,6 +7,7 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Backend.Models;
 using Backend.Services;
+using System.Text.Json.Serialization;
 
 namespace Backend.Controllers
 {
@@ -38,7 +39,7 @@ namespace Backend.Controllers
             // Holt Parkplätze von Person 1 (Lat und Lon mit Großbuchstaben im URL-Parameter)
             var client = _clientFactory.CreateClient();
             string pnrUrl = $"http://localhost:5000/api/parkandride?lat={request.OriginLat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&lon={request.OriginLon.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
-            
+
             ParkAndRideResponse? pnrResponse = null;
             try
             {
@@ -116,18 +117,25 @@ namespace Backend.Controllers
         }
     }
 
-    // Liest die Parkplatz-Antwort von Person 1
-    public class ParkAndRideResponse
-    {
-        public List<ParkingCandidateDto>? Parkings { get; set; }
-    }
+    //Liest Information von Person 1
+public class ParkAndRideResponse
+{
+    [JsonPropertyName("parkings")]
+    public List<ParkingCandidateDto>? Parkings { get; set; }
+}
 
-    // Einzelner Parkplatz von Person 1 (Lat und Lon jetzt großgeschrieben)
-    public class ParkingCandidateDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public double Lat { get; set; }
-        public double Lon { get; set; }
-        public double DriveDurationSeconds { get; set; }
-    }
+public class ParkingCandidateDto
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("lat")]
+    public double Lat { get; set; }
+
+    [JsonPropertyName("lon")]
+    public double Lon { get; set; }
+
+    [JsonPropertyName("driveDurationSeconds")]
+    public double DriveDurationSeconds { get; set; }
+}
 }
