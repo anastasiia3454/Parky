@@ -21,11 +21,11 @@ namespace Backend.Services
             }
         }
 
-        public async Task<TransitStop?> GetNearbyStopAsync(double lat, double lon)
+        public async Task<TransitStop?> GetNearbyStopAsync(double Lat, double Lon)
         {
             try
             {
-                string url = $"https://v6.vbb.transport.rest/locations/nearby?latitude={lat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={lon.ToString(System.Globalization.CultureInfo.InvariantCulture)}&results=1&distance=1000";
+                string url = $"https://v6.vbb.transport.rest/locations/nearby?latitude={Lat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={Lon.ToString(System.Globalization.CultureInfo.InvariantCulture)}&results=1&distance=1000";
                 var stops = await _httpClient.GetFromJsonAsync<JsonElement[]>(url);
                 if (stops != null && stops.Length > 0)
                 {
