@@ -7,63 +7,110 @@
     <title>Parky – Smart P+R Routing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Shrikhand&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Shrikhand&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/frontend/styles.css" />
+    <link rel="stylesheet" href="/frontend/responsive.css">
 </head>
 
 <body>
     <div class="welcome-window" id="welcomeModal">
-        <div class="welcome-card">
-            <div class="logo">
-                <img src="./images/Parky.png" alt="Parky Logo">
-                <h2>Park & Ride. Einfach. Schnell.</h2>
-            </div>
-            <button id="closeModal" class="btn-primary-large">Los fahren!</button>
+        <div class="welcome-content"
+            style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: inherit;">
+
+            <h2 style="margin-top: 0; color: #111827;">🚗 Willkommen bei Parky!</h2>
+
+            <p style="color: #4b5563; font-size: 14px; line-height: 1.5;">
+                Deine intelligente App für die optimale Kombination aus Auto und öffentlichem Nahverkehr (Park & Ride).
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+
+            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">⚠️ Wichtiger Hinweis & Haftungsausschluss
+            </h3>
+            <p style="color: #6b7280; font-size: 13px; line-height: 1.4; margin-bottom: 15px;">
+                Dieses Projekt ist eine private Lern- und Hobbyanwendung. Die bereitgestellten Routen und Parkplatzdaten
+                basieren auf externen, offenen Diensten (OpenStreetMap, OSRM) und erheben keinen Anspruch auf
+                Vollständigkeit oder Fehlerfreiheit. Die Nutzung erfolgt auf eigene Gefahr; es wird keinerlei Haftung
+                übernommen.
+            </p>
+
+            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">🗺️ Urheberrecht & Quellen</h3>
+            <p style="color: #6b7280; font-size: 13px; line-height: 1.4; margin-bottom: 20px;">
+                Kartendaten und Routen © <a href="https://www.openstreetmap.org/copyright" target="_blank"
+                    style="color: #2563eb; text-decoration: underline;">OpenStreetMap contributors</a>. Routing
+                bereitgestellt durch OSRM.
+            </p>
+
+            <button id="closeModal"
+                style="width: 100%; padding: 12px; background: #111827; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px;">
+                Verstanden & App starten
+            </button>
+
         </div>
     </div>
     <div id="layout">
         <aside id="sidebar">
-            <div class="sidebar-header">
-                <img src="./images/Parky.png" alt="Parky Logo" class="brand-logo">
+            <!-- Messfühler für die Peek-Höhe (nur Smartphone/Tablet) -->
+            <span class="sheet-probe" id="sheetProbe" aria-hidden="true"></span>
+
+            <!-- Griff + Zusammenfassung: hier wird gewischt (nur Smartphone/Tablet) -->
+            <div class="sheet-grabber" id="sheetGrabber" role="button" tabindex="0" aria-controls="sheetBody"
+                aria-expanded="false" aria-label="Routenplanung ein- oder ausklappen">
+                <div class="sheet-handle-zone">
+                    <span class="sheet-handle"></span>
+                </div>
+                <div class="sheet-summary" id="sheetSummary">
+                    <span>Wohin soll’s gehen? Nach oben wischen und Route planen.</span>
+                </div>
             </div>
 
-            <form id="routeForm">
-                <div class="input-group">
-                    <label for="start">
-                        <span class="dot start-dot"></span> Startadresse
-                    </label>
-                    <input type="text" id="start" placeholder="z. B. Hauptstraße 10, Berlin" required autocomplete="off">
+            <div class="sheet-body" id="sheetBody">
+                <div class="sidebar-header">
+                    <img src="./images/Parky.png" alt="Parky Logo" class="brand-logo">
                 </div>
 
-                <div class="input-group">
-                    <label for="destination">
-                        <span class="dot dest-dot"></span> Zieladresse
-                    </label>
-                    <input type="text" id="destination" placeholder="z. B. Friedrichstraße 10, Berlin" required autocomplete="off">
-                </div>
-
-                <div class="input-group slider-group">
-                    <div class="slider-header">
-                        <label for="weightSpeed">Priorität</label>
-                        <span class="slider-value-badge" id="sliderBadge">Balance</span>
+                <form id="routeForm">
+                    <div class="input-group">
+                        <label for="start">
+                            <span class="dot start-dot"></span> Startadresse
+                        </label>
+                        <input type="text" id="start" placeholder="z. B. Hauptstraße 10, Berlin" required
+                            autocomplete="off">
                     </div>
-                    <div class="slider-labels">
-                        <span>Schnelligkeit</span>
-                        <span>Komfort</span>
+
+                    <div class="input-group">
+                        <label for="destination">
+                            <span class="dot dest-dot"></span> Zieladresse
+                        </label>
+                        <input type="text" id="destination" placeholder="z. B. Friedrichstraße 10, Berlin" required
+                            autocomplete="off">
                     </div>
-                    <input type="range" id="weightSpeed" min="1" max="5" value="3">
-                </div>
 
-                <button type="submit" id="btnSearch" class="btn-submit">
-                    <span>Parkplätze & Routen suchen</span>
-                </button>
-            </form>
+                    <div class="input-group slider-group">
+                        <div class="slider-header">
+                            <label for="weightSpeed">Priorität</label>
+                            <span class="slider-value-badge" id="sliderBadge">Balance</span>
+                        </div>
+                        <div class="slider-labels">
+                            <span>Schnelligkeit</span>
+                            <span>Komfort</span>
+                        </div>
+                        <input type="range" id="weightSpeed" min="1" max="5" value="3">
+                    </div>
 
-            <div class="divider"></div>
-            <div id="results" class="results-container">
-                <div class="empty-state">
-                    <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
+                    <button type="submit" id="btnSearch" class="btn-submit">
+                        <span>Parkplätze & Routen suchen</span>
+                    </button>
+                </form>
+
+                <div class="divider"></div>
+                <div id="results" class="results-container">
+                    <div class="empty-state">
+                        <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -72,6 +119,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/frontend/js/app.js"></script>
     <script src="/frontend/js/map.js"></script>
+    <script src="/frontend/js/responsive.js"></script>
 </body>
 
 </html>

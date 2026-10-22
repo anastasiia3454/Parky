@@ -176,3 +176,6 @@ async function drawDriveRoute(startLat, startLon, parkLat, parkLon) {
         console.error('Fehler beim Abrufen der Auto-Route:', error);
     }
 }
+
+window.addEventListener('load', () => map.invalidateSize());
+setTimeout(() => map.invalidateSize(), 300);
