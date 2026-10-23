@@ -68,9 +68,9 @@ namespace Backend.Controllers
 
                 // 3. Fußweg berechnen ab Ausstiegshaltestelle
                 double walkDistanceKm = CalculateHaversineDistance(
-                    connection.ArrivalStopLat,
-                    connection.ArrivalStopLon,
-                    request.TargetLat,
+                    connection.ArrivalStopLat, 
+                    connection.ArrivalStopLon, 
+                    request.TargetLat, 
                     request.TargetLon
                 );
                 int walkingMinutes = Math.Max(2, (int)Math.Ceiling(walkDistanceKm * 0.15 * 12.0));
@@ -87,7 +87,8 @@ namespace Backend.Controllers
                     TransitMinutes = connection.DurationMinutes,
                     WalkingMinutes = walkingMinutes,
                     PolylineDrive = "",
-                    PolylineTransit = connection.Polyline
+                    PolylineTransit = connection.Polyline,
+                    Legs = connection.Legs
                 });
             }
 

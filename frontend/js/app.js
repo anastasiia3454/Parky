@@ -41,6 +41,11 @@ async function geocodeAddress(address) {
     };
 }
 
+
+// ==========================================
+// TOAST-MELDUNGEN (oben rechts, blenden sich selbst aus)
+// ==========================================
+
 const TOAST_ICONS = {
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     success: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 9.8"/></svg>',
@@ -129,6 +134,12 @@ function showToast(message, options = {}) {
     return { el, update, close };
 }
 
+
+// ==========================================
+// SUCHE
+// ==========================================
+
+// true = die beste Gesamtroute wird nach der Berechnung automatisch auf der Karte gezeigt
 const AUTO_SELECT_BEST_ROUTE = true;
 
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
@@ -141,8 +152,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
     resultsDiv.innerHTML = '';
     if (submitBtn) submitBtn.classList.add('loading');
-
-    if (typeof clearRouteLayers === 'function') clearRouteLayers();
 
     const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
 
@@ -163,6 +172,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         setStartMarker(startCoords.lat, startCoords.lon);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 
+        // Aufruf von Person 1
         const parkings = await fetchParkAndRide(
             startCoords.lat,
             startCoords.lon,
@@ -183,6 +193,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             });
         }
 
+        // Berechnet die vollständige intermodale Route (Backend /api/Route/calculate)
         const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
         try {
             await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
@@ -234,6 +245,10 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
     }
 }
 
+
+// ======================================================
+// GESAMTROUTEN (Route/calculate) ALS KARTEN
+// ======================================================
 
 function formatDuration(totalMinutes) {
     const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
@@ -317,7 +332,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         const routes = await response.json();
         const resultsDiv = document.getElementById('results');
 
-
+        // Vorherige Routenergebnisse aufräumen
         const existingContainer = document.getElementById('intermodal-results-container');
         if (existingContainer) existingContainer.remove();
 
@@ -326,6 +341,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             return;
         }
 
+        // Index der schnellsten Route (bei Gleichstand die erste)
         const bestIndex = routes.reduce(
             (best, r, i) => (Number(r.totalMinutes) < Number(routes[best].totalMinutes) ? i : best),
             0
@@ -343,12 +359,14 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
 
         const cards = [];
 
-        const selectRoute = (route, card) => {
+        const selectRoute = (route, card, userAction = true) => {
             cards.forEach(c => {
                 const isSelected = c === card;
                 c.classList.toggle('is-selected', isSelected);
                 c.querySelector('.route-card__btn').textContent = isSelected ? 'Ausgewählt' : 'Auswählen';
             });
+
+            showRouteDetail(route, card, userAction);
 
             if (typeof drawFullIntermodalRoute === 'function') {
                 drawFullIntermodalRoute(
@@ -364,6 +382,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 );
             }
 
+            // Für das Bottom-Sheet auf Smartphone/Tablet: einklappen, damit die Karte frei wird
             document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
         };
 
@@ -377,10 +396,171 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         resultsDiv.appendChild(container);
 
         if (AUTO_SELECT_BEST_ROUTE) {
-            selectRoute(routes[bestIndex], cards[bestIndex]);
+            selectRoute(routes[bestIndex], cards[bestIndex], false);
         }
     } catch (err) {
         console.error("Fehler bei der intermodalen Routenberechnung:", err);
         showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
+    }
+}
+
+
+// ======================================================
+// ROUTENDETAILS (öffnen sich unter der gewählten Option)
+// ======================================================
+
+const PRODUCT_COLORS = {
+    subway: '#2864a6',    // U-Bahn
+    suburban: '#008d4f',  // S-Bahn
+    tram: '#d82d1f',      // Tram
+    bus: '#a2107c',       // Bus
+    ferry: '#0e7490',     // Fähre
+    regional: '#1f2937',  // Regionalzug
+    express: '#1f2937'    // Fernverkehr
+};
+
+const PRODUCT_LABELS = {
+    subway: 'U-Bahn',
+    suburban: 'S-Bahn',
+    tram: 'Tram',
+    bus: 'Bus',
+    ferry: 'Fähre',
+    regional: 'Regionalzug',
+    express: 'Fernzug'
+};
+
+function productColor(product) {
+    return PRODUCT_COLORS[product] || '#6b7280';
+}
+
+function formatClock(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function detailStep(modifier, rail, { title, meta = '', body = '', lineHtml = '', time = '' }) {
+    const li = document.createElement('li');
+    li.className = `route-detail__step route-detail__step--${modifier}`;
+    if (rail) li.style.setProperty('--rail', rail);
+    li.innerHTML = `
+        <span class="route-detail__dot" aria-hidden="true"></span>
+        <div class="route-detail__body">
+            <div class="route-detail__name">${lineHtml}${escapeHtml(title)}</div>
+            ${meta ? `<div class="route-detail__meta">${meta}</div>` : ''}
+            ${body}
+        </div>
+        <div class="route-detail__time">${time}</div>
+    `;
+    return li;
+}
+
+function stopRow(label, name, clock) {
+    const when = clock ? ` · ${escapeHtml(clock)}` : '';
+    return `<div class="route-detail__stop"><span class="route-detail__stop-label">${label}</span>${escapeHtml(name || 'Unbekannt')}${when}</div>`;
+}
+
+function buildRouteDetail(route, index, isBest) {
+    const m = (v) => Math.max(0, Math.round(Number(v) || 0));
+    const wrap = document.createElement('section');
+    wrap.className = 'route-detail';
+
+    const legs = Array.isArray(route.legs) ? route.legs.filter(Boolean) : [];
+    const transitLegs = legs.filter(l => !l.isWalk);
+    const lastTransit = transitLegs[transitLegs.length - 1];
+
+    const steps = document.createElement('ul');
+    steps.className = 'route-detail__steps';
+
+    // 1. Auto zum Parkplatz
+    steps.appendChild(detailStep('drive', null, {
+        title: 'Mit dem Auto zum P+R',
+        meta: `Start → Parkplatz`,
+        body: stopRow('Parkplatz', route.parkingName || 'P+R Parkplatz'),
+        time: `${m(route.driveMinutes)} Min.`
+    }));
+
+    // 2. Parken
+    steps.appendChild(detailStep('park', null, {
+        title: 'Auto abstellen',
+        time: `${m(route.parkingBufferMinutes)} Min.`
+    }));
+
+    // 3. ÖPNV: jeder Abschnitt einzeln (Linie, Richtung, Ein- und Ausstieg)
+    if (legs.length > 0) {
+        legs.forEach((leg) => {
+            const minutes = m(leg.minutes);
+
+            if (leg.isWalk) {
+                steps.appendChild(detailStep('walk', null, {
+                    title: 'Zu Fuß zur Haltestelle',
+                    meta: `${escapeHtml(leg.fromName || '')}${leg.toName ? ' → ' + escapeHtml(leg.toName) : ''}`,
+                    time: `${minutes} Min.`
+                }));
+                return;
+            }
+
+            const color = productColor(leg.product);
+            const productLabel = PRODUCT_LABELS[leg.product] || 'ÖPNV';
+            const lineName = leg.lineName || productLabel;
+            const direction = leg.direction ? `Richtung ${leg.direction}` : productLabel;
+
+            steps.appendChild(detailStep('transit', color, {
+                title: direction,
+                lineHtml: `<span class="route-detail__line" style="--line-color:${color}">${escapeHtml(lineName)}</span>`,
+                meta: `${escapeHtml(productLabel)} · ${minutes} Min.`,
+                body: stopRow('Einsteigen', leg.fromName, formatClock(leg.departure))
+                    + stopRow('Aussteigen', leg.toName, formatClock(leg.arrival)),
+                time: formatClock(leg.departure) || `${minutes} Min.`
+            }));
+        });
+    } else {
+        steps.appendChild(detailStep('transit', null, {
+            title: 'ÖPNV',
+            body: `<p class="route-detail__empty">Keine Angaben zu Linie und Haltestellen verfügbar.</p>`,
+            time: `${m(route.transitMinutes)} Min.`
+        }));
+    }
+
+    // 4. Fußweg vom Ausstieg zum Ziel
+    steps.appendChild(detailStep('walk', null, {
+        title: 'Zu Fuß zum Ziel',
+        meta: lastTransit && lastTransit.toName ? `ab ${escapeHtml(lastTransit.toName)}` : '',
+        time: `${m(route.walkingMinutes)} Min.`
+    }));
+
+    const best = isBest ? `<span class="route-card__badge">Schnellste Route</span>` : '';
+
+    wrap.innerHTML = `
+        <header class="route-detail__head">
+            <div>
+                <h4 class="route-detail__title">Option ${index + 1}: Routendetails</h4>
+                <span class="route-detail__sub">${escapeHtml(route.parkingName || 'P+R Parkplatz')}</span>
+                ${best}
+            </div>
+            <div class="route-detail__total">
+                ${formatDuration(route.totalMinutes)}
+                <small class="route-detail__sub">Gesamtzeit</small>
+            </div>
+        </header>
+    `;
+    wrap.appendChild(steps);
+    return wrap;
+}
+
+function showRouteDetail(route, card, userAction = true) {
+    const container = card.parentElement;
+    if (!container) return;
+
+    container.querySelectorAll('.route-detail').forEach(el => el.remove());
+
+    const index = Array.prototype.indexOf.call(container.querySelectorAll('.route-card'), card);
+    const isBest = card.classList.contains('is-best');
+    const detail = buildRouteDetail(route, index, isBest);
+
+    card.insertAdjacentElement('afterend', detail);
+
+    if (userAction) {
+        detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }

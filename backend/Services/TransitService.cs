@@ -197,7 +197,8 @@ namespace Backend.Services
                     LineName = lineName,
                     Polyline = encodedPolyline,
                     ArrivalStopLat = targetStop.Lat,
-                    ArrivalStopLon = targetStop.Lon
+                    ArrivalStopLon = targetStop.Lon,
+                    Legs = ParseLegs(legList)
                 };
             }
             catch (Exception ex)
@@ -205,6 +206,58 @@ namespace Backend.Services
                 Console.WriteLine($"[DEBUG] Exception in GetConnectionAsync: {ex.Message}");
                 return null;
             }
+        }
+
+        // Zerlegt die Legs einer VBB-Verbindung in lesbare Abschnitte (Linie oder Fußweg)
+        public static List<TransitLeg> ParseLegs(IEnumerable<JsonElement> legs)
+        {
+            var result = new List<TransitLeg>();
+
+            foreach (var leg in legs)
+            {
+                if (leg.ValueKind != JsonValueKind.Object) continue;
+
+                var item = new TransitLeg
+                {
+                    IsWalk = leg.TryGetProperty("walking", out var walking) && walking.ValueKind == JsonValueKind.True,
+                    Direction = StringOf(leg, "direction"),
+                    FromName = NameOf(leg, "origin"),
+                    ToName = NameOf(leg, "destination"),
+                    Departure = StringOf(leg, "departure"),
+                    Arrival = StringOf(leg, "arrival")
+                };
+
+                if (TryGetObject(leg, "line", out var line))
+                {
+                    item.LineName = StringOf(line, "name");
+                    item.Product = StringOf(line, "product");
+                }
+
+                if (DateTimeOffset.TryParse(item.Departure, out var dep) && DateTimeOffset.TryParse(item.Arrival, out var arr))
+                {
+                    item.Minutes = Math.Max(0, (int)Math.Round((arr - dep).TotalMinutes));
+                }
+
+                result.Add(item);
+            }
+
+            return result;
+        }
+
+        // Liest einen String-Wert aus einem Objekt (leer, falls nicht vorhanden)
+        private static string StringOf(JsonElement el, string name)
+        {
+            return el.ValueKind == JsonValueKind.Object &&
+                   el.TryGetProperty(name, out var v) &&
+                   v.ValueKind == JsonValueKind.String
+                ? v.GetString() ?? ""
+                : "";
+        }
+
+        // Liest den Namen eines Ortes, z. B. origin.name oder destination.name
+        private static string NameOf(JsonElement el, string place)
+        {
+            return TryGetObject(el, place, out var p) ? StringOf(p, "name") : "";
         }
 
         // Sicherer Zugriff auf eine Objekt-Eigenschaft (wirft nie, auch wenn el kein Objekt ist)
