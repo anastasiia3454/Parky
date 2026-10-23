@@ -1,9 +1,144 @@
 const map = L.map('map').setView([52.5200, 13.4050], 11);
 
-L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+// ==========================================
+// KARTENSTILE (alle kostenlos, ohne API-Schlüssel)
+// ==========================================
+
+const MAP_STYLE_STORAGE_KEY = 'parky.mapStyle';
+const DEFAULT_MAP_STYLE = 'hot';
+
+const OSM_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
+
+const MAP_STYLES = {
+    hot: {
+        label: 'Standard',
+        url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+        subdomains: 'abc',
+        maxZoom: 19,
+        attribution: OSM_ATTRIBUTION + ', Humanitarian-Stil'
+    },
+    osm: {
+        label: 'OSM Klassik',
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        subdomains: 'abc',
+        maxZoom: 19,
+        attribution: OSM_ATTRIBUTION
+    }
+};
+
+const PREVIEW_ZOOM = 11;
+const PREVIEW_CENTER = { lat: 52.5200, lon: 13.4050 };
+
+let currentBaseLayer = null;
+let currentMapStyle = DEFAULT_MAP_STYLE;
+
+function loadSavedMapStyle() {
+    try {
+        const saved = localStorage.getItem(MAP_STYLE_STORAGE_KEY);
+        return saved && MAP_STYLES[saved] ? saved : DEFAULT_MAP_STYLE;
+    } catch (e) {
+        return DEFAULT_MAP_STYLE; // localStorage kann gesperrt sein (z. B. Privatmodus)
+    }
+}
+
+function saveMapStyle(key) {
+    try {
+        localStorage.setItem(MAP_STYLE_STORAGE_KEY, key);
+    } catch (e) {
+        console.warn('Kartenstil konnte nicht gespeichert werden:', e);
+    }
+}
+
+function createBaseLayer(key) {
+    const style = MAP_STYLES[key];
+    return L.tileLayer(style.url, {
+        subdomains: style.subdomains,
+        maxZoom: style.maxZoom,
+        attribution: style.attribution
+    });
+}
+
+function setMapStyle(key, persist = true) {
+    if (!MAP_STYLES[key]) key = DEFAULT_MAP_STYLE;
+
+    if (currentBaseLayer) map.removeLayer(currentBaseLayer);
+    currentBaseLayer = createBaseLayer(key).addTo(map);
+    currentMapStyle = key;
+
+    if (persist) saveMapStyle(key);
+
+    document.querySelectorAll('.map-style-switch__btn').forEach(btn => {
+        const active = btn.dataset.style === key;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', String(active));
+    });
+}
+
+// Rechnet Koordinaten in Kachel-Koordinaten (Web-Mercator) um
+function lonLatToTile(lat, lon, zoom) {
+    const n = Math.pow(2, zoom);
+    const x = Math.floor((lon + 180) / 360 * n);
+    const latRad = lat * Math.PI / 180;
+    const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+    return { x, y };
+}
+
+function previewTileUrl(key, z, x, y) {
+    const style = MAP_STYLES[key];
+    const sub = style.subdomains.charAt(0);
+    return style.url
+        .replace('{s}', sub)
+        .replace('{z}', z)
+        .replace('{x}', x)
+        .replace('{y}', y)
+        .replace('{r}', '');
+}
+
+const MapStyleSwitch = L.Control.extend({
+    options: { position: 'bottomleft' },
+
+    onAdd() {
+        const wrap = L.DomUtil.create('div', 'map-style-switch leaflet-bar');
+        L.DomEvent.disableClickPropagation(wrap);
+        L.DomEvent.disableScrollPropagation(wrap);
+
+        const center = lonLatToTile(PREVIEW_CENTER.lat, PREVIEW_CENTER.lon, PREVIEW_ZOOM);
+
+        Object.entries(MAP_STYLES).forEach(([key, style]) => {
+            const btn = L.DomUtil.create('button', 'map-style-switch__btn', wrap);
+            btn.type = 'button';
+            btn.dataset.style = key;
+            btn.title = style.label;
+            btn.setAttribute('aria-label', `Kartenstil: ${style.label}`);
+
+            // Vorschau: 2×2 echte Kacheln des jeweiligen Stils
+            const thumb = L.DomUtil.create('span', 'map-style-switch__thumb', btn);
+            for (let dy = 0; dy < 2; dy++) {
+                for (let dx = 0; dx < 2; dx++) {
+                    const img = L.DomUtil.create('img', '', thumb);
+                    img.src = previewTileUrl(key, PREVIEW_ZOOM, center.x + dx, center.y + dy);
+                    img.alt = '';
+                    img.draggable = false;
+                    img.loading = 'lazy';
+                }
+            }
+
+            const label = L.DomUtil.create('span', 'map-style-switch__label', btn);
+            label.textContent = style.label;
+
+            L.DomEvent.on(btn, 'click', (e) => {
+                L.DomEvent.stop(e);
+                setMapStyle(key);
+            });
+        });
+
+        return wrap;
+    }
+});
+
+setMapStyle(loadSavedMapStyle(), false);
+new MapStyleSwitch().addTo(map);
+setMapStyle(currentMapStyle, false); // Zustand der Buttons aktualisieren
 
 let startMarker = null;
 let destinationMarker = null;
@@ -20,7 +155,11 @@ window.addEventListener('resize', () => map.invalidateSize());
 
 const sheetQuery = window.matchMedia('(max-width: 1024px)');
 
-
+/**
+ * Abstände für Kartenausschnitt und Popup-Autopan:
+ * Auf Smartphone/Tablet verdeckt das eingeklappte Sheet unten einen Teil der Karte,
+ * oben rechts liegen die Meldungen (Toasts).
+ */
 function viewPadding() {
     return sheetQuery.matches
         ? { top: 70, bottom: 150, side: 24 }
@@ -131,6 +270,7 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
 
         const minutes = Math.round(p.driveDurationSeconds / 60);
 
+        // Nur Informationen – die Route wird über die Gesamtrouten gewählt
         attachPopup(marker, `
             <b>${isBestOption ? '⭐ Bester P+R Platz: ' : ''}${escapeHtml(p.name)}</b><br>
             Fahrzeit Auto: ca. ${minutes} Min.
@@ -155,7 +295,7 @@ async function drawFullIntermodalRoute(
     targetStopLat = null,
     targetStopLon = null
 ) {
-
+    // 1. Vorherige Routen-Ebenen von der Karte entfernen
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
     if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
@@ -169,6 +309,7 @@ async function drawFullIntermodalRoute(
         return;
     }
 
+    // 2. AUTO-ROUTE: Startadresse -> P+R Parkplatz (HELLBLAU via OSRM)
     const driveUrl = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
 
     try {
@@ -188,6 +329,7 @@ async function drawFullIntermodalRoute(
         console.error("Fehler beim Laden der Auto-Route:", err);
     }
 
+    // 3. ÖPNV-ROUTE: Parkplatz -> Ziel-Haltestelle (LILA aus Backend-Polyline)
     if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
@@ -199,7 +341,7 @@ async function drawFullIntermodalRoute(
             console.error("Fehler beim Dekodieren der ÖPNV-Polyline:", e);
         }
     } else {
-
+        // Luftlinie als Ersatz, falls Polyline leer ist (vom Parkplatz zur Ziel-Haltestelle)
         const endLat = isValidCoord(targetStopLat) ? targetStopLat : destLat;
         const endLon = isValidCoord(targetStopLon) ? targetStopLon : destLon;
 
@@ -210,6 +352,7 @@ async function drawFullIntermodalRoute(
         }).addTo(map);
     }
 
+    // 4. FUSSWEG: Ziel-Haltestelle -> Endziel (ORANGE GESTRICHELT via OSRM)
     const walkStartLat = isValidCoord(targetStopLat) ? targetStopLat : parkLat;
     const walkStartLon = isValidCoord(targetStopLon) ? targetStopLon : parkLon;
 
@@ -233,22 +376,11 @@ async function drawFullIntermodalRoute(
         console.error("Fehler beim Laden des Fußwegs:", err);
     }
 
+    // 5. Kartenausschnitt automatisch anpassen
     const activeLayers = [];
     if (currentDriveRouteLayer) activeLayers.push(currentDriveRouteLayer);
     if (currentTransitRouteLayer) activeLayers.push(currentTransitRouteLayer);
     if (currentWalkRouteLayer) activeLayers.push(currentWalkRouteLayer);
 
     fitToLayers(activeLayers, 0.1);
-}
-
-function clearRouteLayers() {
-    [currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer].forEach(layer => {
-        if (layer) map.removeLayer(layer);
-    });
-    currentDriveRouteLayer = null;
-    currentTransitRouteLayer = null;
-    currentWalkRouteLayer = null;
-
-    parkingMarkers.forEach(marker => map.removeLayer(marker));
-    parkingMarkers = [];
 }

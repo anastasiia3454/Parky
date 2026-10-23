@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Backend.Models;
 
 // beschreibt die reine Fahrt mit Bus, S-Bahn oder U-Bahn 
@@ -17,4 +19,7 @@ public class TransitConnection
 
     public double ArrivalStopLat { get; set; }
     public double ArrivalStopLon { get; set; }
+
+    // Einzelne Abschnitte der Fahrt (Linie, Richtung, Ein- und Ausstieg) für die Routendetails
+    public List<TransitLeg> Legs { get; set; } = new();
 }

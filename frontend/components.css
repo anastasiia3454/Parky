@@ -1,5 +1,11 @@
+/* ==========================================================================
+   Parky – components.css
+   Einbinden NACH styles.css und responsive.css.
+   Enthält: Toast-Meldungen (oben rechts) und Routen-Karten.
+   ========================================================================== */
+
 :root {
-    --route-drive: #00bfff;
+    --route-drive: #00bfff;    /* identisch mit der Linienfarbe auf der Karte */
     --route-park: #9ca3af;
     --route-transit: #8b5cf6;
     --route-walk: #f97316;
@@ -13,7 +19,7 @@
     position: fixed;
     top: calc(16px + env(safe-area-inset-top, 0px));
     right: 16px;
-    z-index: 5000;                
+    z-index: 5000;                 /* über Sidebar/Sheet, unter dem Willkommensfenster */
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -36,6 +42,8 @@
     line-height: 1.35;
     cursor: pointer;
     box-shadow: 0 10px 25px -8px rgba(17, 24, 39, 0.25);
+
+    /* Ausgangszustand = Zustand beim Verschwinden */
     opacity: 0;
     transform: translate3d(28px, 0, 0);
     transition: opacity 0.3s ease, transform 0.45s var(--ui-ease);
@@ -77,6 +85,7 @@
     to { transform: rotate(360deg); }
 }
 
+/* Farben (wie die bisherigen Status-Blöcke) */
 .toast--info {
     background: #eff6ff;
     border-color: #bfdbfe;
@@ -101,6 +110,7 @@
     color: #b91c1c;
 }
 
+/* Tablet: Zoom-Buttons liegen oben rechts, daher etwas nach innen rücken */
 @media (min-width: 768px) and (max-width: 1024px) {
     .toast-region {
         right: 64px;
@@ -165,6 +175,7 @@
     box-shadow: 0 0 0 3px rgba(255, 117, 31, 0.15);
 }
 
+/* Kopfzeile: Option links, Gesamtzeit rechts in Orange */
 .route-card__head {
     display: flex;
     align-items: flex-start;
@@ -276,6 +287,7 @@
     border-radius: 50%;
 }
 
+/* Orange „Auswählen"-Button */
 .route-card__btn {
     width: 100%;
     padding: 11px 14px;
@@ -317,3 +329,276 @@
         animation-duration: 0.01s;
     }
 }
+
+/* ==========================================================================
+   Kartenstil-Umschalter (unten links auf der Karte, kompakt, mit Kachel-Vorschau)
+   ========================================================================== */
+.leaflet-control.map-style-switch {
+    float: none;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border: none;
+    border-radius: 12px;
+    background: var(--surface, #fff);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+}
+
+.map-style-switch__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text-muted, #6b7280);
+    transition: background 0.2s var(--ui-ease), color 0.2s var(--ui-ease);
+}
+
+.map-style-switch__btn:hover {
+    background: rgba(15, 23, 42, 0.05);
+}
+
+.map-style-switch__btn:focus-visible {
+    outline: 2px solid var(--primary, #ff751f);
+    outline-offset: 2px;
+}
+
+.map-style-switch__thumb {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 40px;
+    height: 40px;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color 0.2s var(--ui-ease), transform 0.2s var(--ui-ease);
+}
+
+.map-style-switch__thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+.map-style-switch__label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.map-style-switch__btn.is-active {
+    color: var(--text-main, #111827);
+}
+
+.map-style-switch__btn.is-active .map-style-switch__thumb {
+    border-color: var(--primary, #ff751f);
+}
+
+.map-style-switch__btn:active .map-style-switch__thumb {
+    transform: scale(0.96);
+}
+
+/* Tablet/Smartphone: Sheet liegt unten – Umschalter darüber anheben */
+@media (max-width: 1024px) {
+    .leaflet-bottom .leaflet-control.map-style-switch {
+        margin-bottom: 160px;
+        margin-left: 8px;
+    }
+}
+
+/* Kleine Smartphones: noch kompakter */
+@media (max-width: 480px) {
+    .leaflet-bottom .leaflet-control.map-style-switch {
+        margin-bottom: 170px;
+        margin-left: 8px;
+        gap: 3px;
+        padding: 3px;
+    }
+
+    .map-style-switch__thumb {
+        width: 34px;
+        height: 34px;
+    }
+
+    .map-style-switch__label {
+        font-size: 0.56rem;
+    }
+}
+
+/* Sehr hohe Bildschirme (Desktop): Umschalter etwas weiter unten */
+@media (min-width: 1025px) and (max-height: 700px) {
+    .leaflet-bottom .leaflet-control.map-style-switch {
+        margin-bottom: 14px;
+    }
+}
+
+/* ==========================================================================
+   Routendetails – öffnen sich unter der gewählten Option
+   ========================================================================== */
+.route-detail {
+    margin: -4px 0 14px;
+    padding: 16px 16px 6px;
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--primary, #ff751f);
+    border-radius: var(--radius-lg, 16px);
+    animation: routeDetailIn 0.35s var(--ui-ease);
+}
+
+@keyframes routeDetailIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.route-detail__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border, #e5e7eb);
+}
+
+.route-detail__title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--bg-dark, #111827);
+}
+
+.route-detail__sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.route-detail__total {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--primary, #ff751f);
+    white-space: nowrap;
+    text-align: right;
+}
+
+.route-detail__steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.route-detail__step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    gap: 10px;
+    padding-bottom: 16px;
+}
+
+/* Vertikale Linie zwischen den Abschnitten */
+.route-detail__step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 16px;
+    bottom: 0;
+    width: 4px;
+    border-radius: 4px;
+    background: var(--rail, var(--route-park));
+}
+
+.route-detail__dot {
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--surface, #fff);
+    border: 4px solid var(--rail, var(--route-park));
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+}
+
+.route-detail__body {
+    min-width: 0;
+}
+
+.route-detail__name {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-main, #111827);
+    line-height: 1.3;
+}
+
+.route-detail__meta {
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--text-muted, #6b7280);
+    line-height: 1.4;
+}
+
+.route-detail__stop {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--text-main, #111827);
+    line-height: 1.35;
+}
+
+.route-detail__stop-label {
+    display: inline-block;
+    min-width: 84px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6b7280);
+}
+
+.route-detail__time {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-main, #111827);
+    white-space: nowrap;
+}
+
+.route-detail__line {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    margin-right: 8px;
+    padding: 3px 9px;
+    border-radius: 7px;
+    background: var(--line-color, #6b7280);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+
+.route-detail__transfer {
+    margin: -6px 0 14px 28px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-muted, #6b7280);
+}
+
+.route-detail__empty {
+    margin: 0 0 12px;
+    font-size: 0.82rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.route-detail__step--drive { --rail: var(--route-drive); }
+.route-detail__step--park  { --rail: var(--route-park); }
+.route-detail__step--walk  { --rail: var(--route-walk); }
+.route-detail__step--transit { --rail: var(--route-transit); }
