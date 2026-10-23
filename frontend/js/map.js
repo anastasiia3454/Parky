@@ -20,11 +20,7 @@ window.addEventListener('resize', () => map.invalidateSize());
 
 const sheetQuery = window.matchMedia('(max-width: 1024px)');
 
-/**
- * Abstände für Kartenausschnitt und Popup-Autopan:
- * Auf Smartphone/Tablet verdeckt das eingeklappte Sheet unten einen Teil der Karte,
- * oben rechts liegen die Meldungen (Toasts).
- */
+
 function viewPadding() {
     return sheetQuery.matches
         ? { top: 70, bottom: 150, side: 24 }
@@ -135,7 +131,6 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
 
         const minutes = Math.round(p.driveDurationSeconds / 60);
 
-        // Nur Informationen – die Route wird über die Gesamtrouten gewählt
         attachPopup(marker, `
             <b>${isBestOption ? '⭐ Bester P+R Platz: ' : ''}${escapeHtml(p.name)}</b><br>
             Fahrzeit Auto: ca. ${minutes} Min.
@@ -160,7 +155,7 @@ async function drawFullIntermodalRoute(
     targetStopLat = null,
     targetStopLon = null
 ) {
-    // 1. Vorherige Routen-Ebenen von der Karte entfernen
+
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
     if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
@@ -174,7 +169,6 @@ async function drawFullIntermodalRoute(
         return;
     }
 
-    // 2. AUTO-ROUTE: Startadresse -> P+R Parkplatz (HELLBLAU via OSRM)
     const driveUrl = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
 
     try {
@@ -194,7 +188,6 @@ async function drawFullIntermodalRoute(
         console.error("Fehler beim Laden der Auto-Route:", err);
     }
 
-    // 3. ÖPNV-ROUTE: Parkplatz -> Ziel-Haltestelle (LILA aus Backend-Polyline)
     if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
@@ -206,7 +199,7 @@ async function drawFullIntermodalRoute(
             console.error("Fehler beim Dekodieren der ÖPNV-Polyline:", e);
         }
     } else {
-        // Luftlinie als Ersatz, falls Polyline leer ist (vom Parkplatz zur Ziel-Haltestelle)
+
         const endLat = isValidCoord(targetStopLat) ? targetStopLat : destLat;
         const endLon = isValidCoord(targetStopLon) ? targetStopLon : destLon;
 
@@ -217,7 +210,6 @@ async function drawFullIntermodalRoute(
         }).addTo(map);
     }
 
-    // 4. FUSSWEG: Ziel-Haltestelle -> Endziel (ORANGE GESTRICHELT via OSRM)
     const walkStartLat = isValidCoord(targetStopLat) ? targetStopLat : parkLat;
     const walkStartLon = isValidCoord(targetStopLon) ? targetStopLon : parkLon;
 
@@ -241,7 +233,6 @@ async function drawFullIntermodalRoute(
         console.error("Fehler beim Laden des Fußwegs:", err);
     }
 
-    // 5. Kartenausschnitt automatisch anpassen
     const activeLayers = [];
     if (currentDriveRouteLayer) activeLayers.push(currentDriveRouteLayer);
     if (currentTransitRouteLayer) activeLayers.push(currentTransitRouteLayer);

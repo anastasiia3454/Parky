@@ -1,11 +1,5 @@
-/* ==========================================================================
-   Parky – components.css
-   Einbinden NACH styles.css und responsive.css.
-   Enthält: Toast-Meldungen (oben rechts) und Routen-Karten.
-   ========================================================================== */
-
 :root {
-    --route-drive: #00bfff;    /* identisch mit der Linienfarbe auf der Karte */
+    --route-drive: #00bfff;
     --route-park: #9ca3af;
     --route-transit: #8b5cf6;
     --route-walk: #f97316;
@@ -19,7 +13,7 @@
     position: fixed;
     top: calc(16px + env(safe-area-inset-top, 0px));
     right: 16px;
-    z-index: 5000;                 /* über Sidebar/Sheet, unter dem Willkommensfenster */
+    z-index: 5000;                
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -42,8 +36,6 @@
     line-height: 1.35;
     cursor: pointer;
     box-shadow: 0 10px 25px -8px rgba(17, 24, 39, 0.25);
-
-    /* Ausgangszustand = Zustand beim Verschwinden */
     opacity: 0;
     transform: translate3d(28px, 0, 0);
     transition: opacity 0.3s ease, transform 0.45s var(--ui-ease);
@@ -85,7 +77,6 @@
     to { transform: rotate(360deg); }
 }
 
-/* Farben (wie die bisherigen Status-Blöcke) */
 .toast--info {
     background: #eff6ff;
     border-color: #bfdbfe;
@@ -110,7 +101,6 @@
     color: #b91c1c;
 }
 
-/* Tablet: Zoom-Buttons liegen oben rechts, daher etwas nach innen rücken */
 @media (min-width: 768px) and (max-width: 1024px) {
     .toast-region {
         right: 64px;
@@ -175,7 +165,6 @@
     box-shadow: 0 0 0 3px rgba(255, 117, 31, 0.15);
 }
 
-/* Kopfzeile: Option links, Gesamtzeit rechts in Orange */
 .route-card__head {
     display: flex;
     align-items: flex-start;
@@ -287,7 +276,6 @@
     border-radius: 50%;
 }
 
-/* Orange „Auswählen"-Button */
 .route-card__btn {
     width: 100%;
     padding: 11px 14px;

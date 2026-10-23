@@ -21,19 +21,17 @@
     let currentOffset = 0;
     let lastY = 0;
     let lastTime = 0;
-    let velocity = 0; // px/ms, negativ = nach oben
+    let velocity = 0;
 
     const isSheetMode = () => mq.matches;
     const peekHeight = () => (probe ? probe.offsetHeight : 104);
     const maxOffset = () => Math.max(0, sheet.offsetHeight - peekHeight());
 
-    /* ---------- Zustand setzen ---------- */
     function setExpanded(value) {
         expanded = value;
         sheet.classList.toggle('is-expanded', value);
         grabber.setAttribute('aria-expanded', String(value));
 
-        // Eingeklappte Eingaben sind außerhalb des Bildschirms: nicht fokussierbar machen
         if (isSheetMode()) {
             body.inert = !value;
         }
@@ -44,7 +42,6 @@
         if (summary) summary.style.removeProperty('--p');
     }
 
-    /* ---------- Drag ---------- */
     grabber.addEventListener('pointerdown', (e) => {
         if (!isSheetMode()) return;
         if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -69,7 +66,6 @@
         const max = maxOffset();
         let offset = startOffset + dy;
 
-        // Gummiband-Effekt über die Grenzen hinaus
         if (offset < 0) offset *= 0.25;
         else if (offset > max) offset = max + (offset - max) * 0.25;
 
@@ -83,7 +79,6 @@
 
         const dt = e.timeStamp - lastTime;
         if (dt > 0) {
-            // leicht geglättet, damit einzelne Ausreißer nicht dominieren
             velocity = 0.8 * ((e.clientY - lastY) / dt) + 0.2 * velocity;
             lastY = e.clientY;
             lastTime = e.timeStamp;
@@ -100,14 +95,13 @@
 
         let target;
         if (!moved) {
-            target = !expanded;                              // einfacher Tipp = umschalten
+            target = !expanded;                
         } else if (Math.abs(velocity) > 0.35) {
-            target = velocity < 0;                           // schneller Swipe entscheidet
+            target = velocity < 0;   
         } else {
-            target = currentOffset < maxOffset() / 2;        // sonst: näher an welcher Position?
+            target = currentOffset < maxOffset() / 2;
         }
 
-        // Inline-Werte entfernen, Klasse wechseln: CSS animiert vom aktuellen Wert zum Ziel
         sheet.classList.remove('is-dragging');
         clearInlineStyles();
         setExpanded(target);
@@ -116,7 +110,6 @@
     grabber.addEventListener('pointerup', endDrag);
     grabber.addEventListener('pointercancel', endDrag);
 
-    /* ---------- Tastatur (Barrierefreiheit) ---------- */
     grabber.addEventListener('keydown', (e) => {
         if (!isSheetMode()) return;
         if (e.key === 'Enter' || e.key === ' ') {
@@ -131,7 +124,6 @@
         }
     });
 
-    /* ---------- Beim Absenden: Sheet einklappen, damit die Karte sichtbar wird ---------- */
     if (form) {
         form.addEventListener('submit', () => {
             if (!isSheetMode()) return;
@@ -142,7 +134,6 @@
         });
     }
 
-    /* ---------- Zusammenfassung im eingeklappten Zustand ---------- */
     function updateSummary() {
         if (!results || !summaryText) return;
 
@@ -161,7 +152,6 @@
     }
     updateSummary();
 
-    /* ---------- Wechsel zwischen Desktop und Sheet-Modus ---------- */
     function applyMode() {
         clearInlineStyles();
         sheet.classList.remove('is-dragging');

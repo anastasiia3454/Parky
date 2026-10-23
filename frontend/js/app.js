@@ -41,11 +41,6 @@ async function geocodeAddress(address) {
     };
 }
 
-
-// ==========================================
-// TOAST-MELDUNGEN (oben rechts, blenden sich selbst aus)
-// ==========================================
-
 const TOAST_ICONS = {
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     success: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 9.8"/></svg>',
@@ -134,12 +129,6 @@ function showToast(message, options = {}) {
     return { el, update, close };
 }
 
-
-// ==========================================
-// SUCHE
-// ==========================================
-
-// true = die beste Gesamtroute wird nach der Berechnung automatisch auf der Karte gezeigt
 const AUTO_SELECT_BEST_ROUTE = true;
 
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
@@ -174,7 +163,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         setStartMarker(startCoords.lat, startCoords.lon);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 
-        // Aufruf von Person 1
         const parkings = await fetchParkAndRide(
             startCoords.lat,
             startCoords.lon,
@@ -195,7 +183,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             });
         }
 
-        // Berechnet die vollständige intermodale Route (Backend /api/Route/calculate)
         const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
         try {
             await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
@@ -247,10 +234,6 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
     }
 }
 
-
-// ======================================================
-// GESAMTROUTEN (Route/calculate) ALS KARTEN
-// ======================================================
 
 function formatDuration(totalMinutes) {
     const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
@@ -334,7 +317,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         const routes = await response.json();
         const resultsDiv = document.getElementById('results');
 
-        // Vorherige Routenergebnisse aufräumen
+
         const existingContainer = document.getElementById('intermodal-results-container');
         if (existingContainer) existingContainer.remove();
 
@@ -343,7 +326,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             return;
         }
 
-        // Index der schnellsten Route (bei Gleichstand die erste)
         const bestIndex = routes.reduce(
             (best, r, i) => (Number(r.totalMinutes) < Number(routes[best].totalMinutes) ? i : best),
             0
@@ -382,7 +364,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 );
             }
 
-            // Für das Bottom-Sheet auf Smartphone/Tablet: einklappen, damit die Karte frei wird
             document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
         };
 

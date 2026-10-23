@@ -52,8 +52,7 @@ app.MapGet("/api/parkandride", async (
         {
             var client = clientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(20);
-            
-            // WICHTIG: User-Agent setzen, damit APIs die Anfrage nicht blockieren
+
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
 
             string latStr = lat.ToString(CultureInfo.InvariantCulture);
@@ -224,7 +223,6 @@ app.MapGet("/api/parkandride", async (
     }
     catch (Exception ex)
     {
-        // GIBT DEN ECHTEN FEHLER IM TERMINAL AUS
         Console.WriteLine($"\n[KRITISCHER FEHLER]: {ex.Message}");
         Console.WriteLine(ex.StackTrace);
         

@@ -45,7 +45,6 @@ body {
     position: relative;
 }
 
-/* Sidebar Styling */
 #sidebar {
     width: 380px;
     background: var(--surface);
@@ -69,7 +68,6 @@ body {
     object-fit: contain;
 }
 
-/* Form inputs */
 .input-group {
     margin-bottom: 18px;
 }
@@ -114,7 +112,6 @@ body {
     box-shadow: 0 0 0 4px rgba(255, 117, 31, 0.15);
 }
 
-/* Slider Customizing */
 .slider-group {
     background-color: #f9fafb;
     padding: 14px;
@@ -153,7 +150,7 @@ input[type="range"] {
     cursor: pointer;
 }
 
-/* Submit Button */
+
 .btn-submit {
     width: 100%;
     padding: 14px;
@@ -182,7 +179,6 @@ input[type="range"] {
     margin: 24px 0;
 }
 
-/* Results Section */
 .results-container {
     flex: 1;
     font-size: 0.9rem;
@@ -194,14 +190,12 @@ input[type="range"] {
     font-size: 0.88rem;
 }
 
-/* Map area */
 #map {
     flex: 1;
     height: 100%;
     z-index: 1;
 }
 
-/* Welcome Overlay Screen */
 .welcome-window {
     position: fixed;
     top: 0;
@@ -244,7 +238,6 @@ input[type="range"] {
     margin-bottom: 6px;
 }
 
-/* Button im Popup */
 .leaflet-popup-content button {
     margin-top: 10px;
     width: 100%;
