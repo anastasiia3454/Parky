@@ -17,16 +17,22 @@ namespace Backend.Controllers
     {
         private readonly TransitService _transitService;
         private readonly IHttpClientFactory _clientFactory;
-
+        /// <summary>
+        /// Konstruktor für den RouteController
+        /// </summary>
         public RouteController(TransitService transitService, IHttpClientFactory clientFactory)
         {
             _transitService = transitService;
             _clientFactory = clientFactory;
         }
 
+        /// <summary>
+        /// Hauptendpunkt zu Berechnung der Routen
+        /// </summary>
         [HttpPost("calculate")]
         public async Task<IActionResult> CalculateRoute([FromBody] RouteRequest request)
         {
+            //Prüfen, ob die Anfrage Daten enthält
             if (request == null)
             {
                 return BadRequest("Ungültige Anfrage.");
@@ -38,13 +44,14 @@ namespace Backend.Controllers
             ParkAndRideResponse? pnrResponse = null;
             try
             {
+                //P+R Parkplätze vom lokalen Dienst abrufen
                 pnrResponse = await client.GetFromJsonAsync<ParkAndRideResponse>(pnrUrl);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Fehler beim Abrufen der Parkplätze: {ex.Message}");
             }
-
+            // Prüfen, ob Parkplätze gefunden wurden
             if (pnrResponse == null || pnrResponse.Parkings == null || !pnrResponse.Parkings.Any())
             {
                 return NotFound("Keine verfügbaren P+R Parkplätze in der Nähe gefunden.");
@@ -52,29 +59,31 @@ namespace Backend.Controllers
 
             var results = new List<RouteResult>();
 
+            // Alle gefundenen Parkplätze durchgehen und Routen berechnen
             foreach (var parking in pnrResponse.Parkings)
             {
+                //// Fahrzeit zum Parkplatz berechnen (mindestens 3 Minuten)
                 int driveMinutes = Math.Max(3, (int)Math.Ceiling(parking.DriveDurationSeconds / 60.0));
 
-                // 1. Haltestelle am Parkplatz suchen
+                // 1. Nächste Haltestelle am Parkplatz suchen
                 var stop = await _transitService.GetNearbyStopAsync(parking.Lat, parking.Lon);
                 if (stop == null) continue;
-
+                // Abfahrtszeit für die Bahn (inklusive 5 Minuten Puffer für das Parken)
                 var transitDeparture = request.DepartureTime.AddMinutes(driveMinutes + 5);
 
-                // 2. ÖPNV-Verbindung berechnen
+                // 2. ÖPNV-Verbindung ab Haltestelle zum Ziel berechn
                 var connection = await _transitService.GetConnectionAsync(stop.Id, request.TargetLat, request.TargetLon, transitDeparture);
                 if (connection == null) continue;
 
-                // 3. Fußweg berechnen ab Ausstiegshaltestelle
+                // 3. Fußweg von der Ausstiegshaltestelle zum finalen Ziel berechnen
                 double walkDistanceKm = CalculateHaversineDistance(
-                    connection.ArrivalStopLat, 
-                    connection.ArrivalStopLon, 
-                    request.TargetLat, 
+                    connection.ArrivalStopLat,
+                    connection.ArrivalStopLon,
+                    request.TargetLat,
                     request.TargetLon
                 );
                 int walkingMinutes = Math.Max(2, (int)Math.Ceiling(walkDistanceKm * 0.15 * 12.0));
-
+                // Fertige Route zur Liste hinzufügen
                 results.Add(new RouteResult
                 {
                     ParkingName = parking.Name,
@@ -97,11 +106,14 @@ namespace Backend.Controllers
             {
                 return Ok(new List<RouteResult>());
             }
-
+            // Die 3 besten (schnellsten) Routen auswählen und zurückgeben
             var bestRoutes = results.OrderBy(r => r.TotalMinutes).Take(3).ToList();
             return Ok(bestRoutes);
         }
 
+        /// <summary>
+        /// Berechnet die geografische Distanz in Kilometern zwischen zwei Koordinaten.
+        /// </summary>
         private static double CalculateHaversineDistance(double lat1, double lon1, double lat2, double lon2)
         {
             const double R = 6371.0;
@@ -114,12 +126,18 @@ namespace Backend.Controllers
         }
     }
 
+    /// <summary>
+    /// Hilfs Modell für die Antwort der P+R-API
+    /// </summary>
     public class ParkAndRideResponse
     {
         [JsonPropertyName("parkings")]
         public List<ParkingCandidateDto>? Parkings { get; set; }
     }
 
+    /// <summary>
+    /// Hilfs-Modell für einen einzelnen Parkplatz-Kandidaten
+    /// </summary>
     public class ParkingCandidateDto
     {
         [JsonPropertyName("name")]
