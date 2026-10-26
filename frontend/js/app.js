@@ -214,7 +214,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
 async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5) {
     try {
-        let url = `http://localhost:5000/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
+        let url = `https://parky-luln.onrender.com/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
         if (destLat && destLon) {
             url += `&destLat=${destLat}&destLon=${destLon}`;
         }
@@ -311,7 +311,7 @@ function buildRouteCard(route, index, isBest) {
 
 async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
     try {
-        const response = await fetch('http://localhost:5000/api/Route/calculate', {
+        const response = await fetch('https://parky-luln.onrender.com', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
