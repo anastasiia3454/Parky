@@ -39,7 +39,7 @@ namespace Backend.Controllers
             }
 
             var client = _clientFactory.CreateClient();
-            string pnrUrl = $"https://parky-luln.onrender.com/api/parkandride?lat={request.OriginLat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&lon={request.OriginLon.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+           string pnrUrl = $"https://parky-luln.onrender.com/api/parkandride?lat={request.OriginLat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&lon={request.OriginLon.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
 
             ParkAndRideResponse? pnrResponse = null;
             try
