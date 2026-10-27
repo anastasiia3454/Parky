@@ -6,9 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Erlaubnis geben, dass die Webseite mit diesem Server reden darf (CORS)
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowVercel", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("https://parky-frontend.vercel.app") // Deine Vercel URL
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -27,7 +27,7 @@ builder.Services.AddScoped<ParkAndRideService>();
 var app = builder.Build();
 
 // Regeln anwenden
-app.UseCors();
+app.UseCors("AllowVercel");
 app.MapControllers();
 
 //Der Server wird gestartet
