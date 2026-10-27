@@ -375,3 +375,39 @@ input[type="range"] {
 .welcome-window.hidden .welcome-card {
     transform: scale(0.85) translateY(-20px);
 }
+
+.recent-searches-container {
+    margin-top: 15px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.recent-searches-container h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #495057;
+}
+
+.recent-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.recent-chip {
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #212529;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recent-chip:hover {
+    background: #e2e6ea;
+    border-color: #adb5bd;
+}
