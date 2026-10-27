@@ -128,7 +128,13 @@ const MapStyleSwitch = L.Control.extend({
 
             L.DomEvent.on(btn, 'click', (e) => {
                 L.DomEvent.stop(e);
-                setMapStyle(key);
+                let target = key;
+                // Smartphone: nur der aktive Stil ist sichtbar, Tipp wechselt zum nächsten
+                if (window.matchMedia('(max-width: 768px)').matches && key === currentMapStyle) {
+                    const keys = Object.keys(MAP_STYLES);
+                    target = keys[(keys.indexOf(key) + 1) % keys.length];
+                }
+                setMapStyle(target);
             });
         });
 
@@ -208,6 +214,37 @@ function attachPopup(marker, html, radius) {
     });
 }
 
+/**
+ * Startpunkt: blauer Punkt mit weißem Rand (Apple-Stil), pendelt leicht links/rechts
+ */
+function startMarkerIcon() {
+    return L.divIcon({
+        className: 'parky-marker parky-marker--start',
+        html: '<div class="parky-marker__sway"><span class="parky-marker__dot"></span></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+    });
+}
+
+/**
+ * Endpunkt: Pin mit Kreis und weißem Mittelpunkt (wie im Beispiel), pendelt leicht links/rechts
+ */
+function destinationMarkerIcon() {
+    const svg =
+        '<svg viewBox="0 0 34 44" width="34" height="44" aria-hidden="true">' +
+        '<path d="M17 1C8 1 1 8 1 17C1 28 17 43 17 43C17 43 33 28 33 17C33 8 26 1 17 1Z" ' +
+        'fill="#5b67f0" stroke="#ffffff" stroke-width="2"/>' +
+        '<circle cx="17" cy="17" r="6" fill="#ffffff"/>' +
+        '</svg>';
+
+    return L.divIcon({
+        className: 'parky-marker parky-marker--end',
+        html: '<div class="parky-marker__sway">' + svg + '</div>',
+        iconSize: [34, 44],
+        iconAnchor: [17, 44]
+    });
+}
+
 function setStartMarker(lat, lon) {
     if (!isValidCoord(lat) || !isValidCoord(lon)) return;
 
@@ -217,15 +254,12 @@ function setStartMarker(lat, lon) {
 
     const radius = 9;
 
-    startMarker = L.circleMarker([lat, lon], {
-        radius: radius,
-        color: '#bfdbfe',
-        fillColor: '#1d4ed8',
-        fillOpacity: 0.9,
-        weight: 2
+    startMarker = L.marker([lat, lon], {
+        icon: startMarkerIcon(),
+        keyboard: false
     }).addTo(map);
 
-    attachPopup(startMarker, '<b>Dein Startpunkt</b>', radius);
+    attachPopup(startMarker, '<b>Dein Startpunkt</b>', 11);
 }
 
 function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
@@ -237,15 +271,12 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
 
     const radius = 9;
 
-    destinationMarker = L.circleMarker([lat, lon], {
-        radius: radius,
-        color: '#ff751f',
-        fillColor: '#111827',
-        fillOpacity: 0.9,
-        weight: 2
+    destinationMarker = L.marker([lat, lon], {
+        icon: destinationMarkerIcon(),
+        keyboard: false
     }).addTo(map);
 
-    attachPopup(destinationMarker, `<b>Ziel:</b><br>${escapeHtml(name)}`, radius);
+    attachPopup(destinationMarker, `<b>Ziel:</b><br>${escapeHtml(name)}`, 40);
 }
 
 function displayParkingsOnMap(parkings, startLat, startLon) {
