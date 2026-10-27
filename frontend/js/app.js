@@ -65,13 +65,6 @@ function getToastRegion() {
     return region;
 }
 
-/**
- * Zeigt eine Meldung oben rechts.
- * type:     'info' (blau) | 'success' (grün) | 'warning' (orange) | 'error' (rot)
- * duration: Anzeigedauer in ms (0 = bleibt, bis close() aufgerufen wird)
- * loading:  zeigt einen Spinner statt des Icons
- * Rückgabe: { el, update(message, options), close() }
- */
 function showToast(message, options = {}) {
     const region = getToastRegion();
     const el = document.createElement('div');
@@ -124,7 +117,6 @@ function showToast(message, options = {}) {
     render(message);
     region.appendChild(el);
 
-    // Maximal 4 Meldungen gleichzeitig
     while (region.children.length > 4) region.firstElementChild.remove();
 
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-visible')));
@@ -136,21 +128,92 @@ function showToast(message, options = {}) {
 
 
 // ==========================================
+// SUCHHISTORIE ("Neulich gesucht")
+// ==========================================
+
+function saveRecentSearch(start, destination) {
+    if (!start || !destination) return;
+    let history = JSON.parse(localStorage.getItem('parky_recent_searches')) || [];
+    
+    // Doppelte Einträge filtern und neue Suche ganz nach vorne stellen
+    history = history.filter(item => !(item.start === start && item.destination === destination));
+    history.unshift({ start, destination });
+    
+    // Maximal 5 Einträge behalten
+    if (history.length > 5) history.pop();
+    
+    localStorage.setItem('parky_recent_searches', JSON.stringify(history));
+    renderRecentSearches();
+}
+
+function renderRecentSearches() {
+    let history = JSON.parse(localStorage.getItem('parky_recent_searches')) || [];
+    let panel = document.getElementById('recentSearchesPanel');
+
+    if (history.length === 0) {
+        if (panel) panel.style.display = 'none';
+        return;
+    }
+
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'recentSearchesPanel';
+        panel.className = 'recent-searches-container';
+        const routeForm = document.getElementById('routeForm');
+        if (routeForm) routeForm.insertAdjacentElement('afterend', panel);
+    }
+
+    panel.style.display = 'block';
+    panel.innerHTML = `
+        <h4>Neulich gesucht:</h4>
+        <div class="recent-chips">
+            ${history.map((item, index) => `
+                <button type="button" class="recent-chip" data-index="${index}">
+                    📍 ${escapeHtml(item.start)} ➔ ${escapeHtml(item.destination)}
+                </button>
+            `).join('')}
+        </div>
+    `;
+
+    panel.querySelectorAll('.recent-chip').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const index = e.currentTarget.dataset.index;
+            const selected = history[index];
+            
+            const startInput = document.getElementById('start');
+            const destInput = document.getElementById('destination');
+            
+            if (startInput) startInput.value = selected.start;
+            if (destInput) destInput.value = selected.destination;
+            
+            const routeForm = document.getElementById('routeForm');
+            if (routeForm) routeForm.requestSubmit();
+        });
+    });
+}
+
+// Beim Laden der Seite direkt ausführen
+document.addEventListener('DOMContentLoaded', renderRecentSearches);
+
+
+// ==========================================
 // SUCHE
 // ==========================================
 
-// true = die beste Gesamtroute wird nach der Berechnung automatisch auf der Karte gezeigt
 const AUTO_SELECT_BEST_ROUTE = true;
 
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Suche direkt in der Historie speichern
-    saveRecentSearch(startText, destText);
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
+    
+    // 1. Zuerst die Werte aus den Feldern auslesen
     const startText = document.getElementById('start').value;
     const destText = document.getElementById('destination').value;
+
+    // 2. Jetzt erst die Suche in der Historie speichern
+    saveRecentSearch(startText, destText);
 
     resultsDiv.innerHTML = '';
     if (submitBtn) submitBtn.classList.add('loading');
@@ -174,7 +237,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         setStartMarker(startCoords.lat, startCoords.lon);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 
-        // Aufruf von Person 1
         const parkings = await fetchParkAndRide(
             startCoords.lat,
             startCoords.lon,
@@ -195,7 +257,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             });
         }
 
-        // Berechnet die vollständige intermodale Route (Backend /api/Route/calculate)
         const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
         try {
             await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
@@ -334,7 +395,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         const routes = await response.json();
         const resultsDiv = document.getElementById('results');
 
-        // Vorherige Routenergebnisse aufräumen
         const existingContainer = document.getElementById('intermodal-results-container');
         if (existingContainer) existingContainer.remove();
 
@@ -343,7 +403,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             return;
         }
 
-        // Index der schnellsten Route (bei Gleichstand die erste)
         const bestIndex = routes.reduce(
             (best, r, i) => (Number(r.totalMinutes) < Number(routes[best].totalMinutes) ? i : best),
             0
@@ -384,7 +443,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 );
             }
 
-            // Für das Bottom-Sheet auf Smartphone/Tablet: einklappen, damit die Karte frei wird
             document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
         };
 
@@ -408,17 +466,17 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
 
 
 // ======================================================
-// ROUTENDETAILS (öffnen sich unter der gewählten Option)
+// ROUTENDETAILS
 // ======================================================
 
 const PRODUCT_COLORS = {
-    subway: '#2864a6',    // U-Bahn
-    suburban: '#008d4f',  // S-Bahn
-    tram: '#d82d1f',      // Tram
-    bus: '#a2107c',       // Bus
-    ferry: '#0e7490',     // Fähre
-    regional: '#1f2937',  // Regionalzug
-    express: '#1f2937'    // Fernverkehr
+    subway: '#2864a6',
+    suburban: '#008d4f',
+    tram: '#d82d1f',
+    bus: '#a2107c',
+    ferry: '#0e7490',
+    regional: '#1f2937',
+    express: '#1f2937'
 };
 
 const PRODUCT_LABELS = {
@@ -474,7 +532,6 @@ function buildRouteDetail(route, index, isBest) {
     const steps = document.createElement('ul');
     steps.className = 'route-detail__steps';
 
-    // 1. Auto zum Parkplatz
     steps.appendChild(detailStep('drive', null, {
         title: 'Mit dem Auto zum P+R',
         meta: `Start → Parkplatz`,
@@ -482,13 +539,11 @@ function buildRouteDetail(route, index, isBest) {
         time: `${m(route.driveMinutes)} Min.`
     }));
 
-    // 2. Parken
     steps.appendChild(detailStep('park', null, {
         title: 'Auto abstellen',
         time: `${m(route.parkingBufferMinutes)} Min.`
     }));
 
-    // 3. ÖPNV: jeder Abschnitt einzeln (Linie, Richtung, Ein- und Ausstieg)
     if (legs.length > 0) {
         legs.forEach((leg) => {
             const minutes = m(leg.minutes);
@@ -524,7 +579,6 @@ function buildRouteDetail(route, index, isBest) {
         }));
     }
 
-    // 4. Fußweg vom Ausstieg zum Ziel
     steps.appendChild(detailStep('walk', null, {
         title: 'Zu Fuß zum Ziel',
         meta: lastTransit && lastTransit.toName ? `ab ${escapeHtml(lastTransit.toName)}` : '',
@@ -564,8 +618,5 @@ function showRouteDetail(route, card, userAction = true) {
 
     if (userAction) {
         detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-
     }
-
 }
