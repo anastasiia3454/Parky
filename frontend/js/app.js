@@ -311,7 +311,7 @@ function buildRouteCard(route, index, isBest) {
 
 async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
     try {
-        const response = await fetch('http://localhost:5000', {
+        const response = await fetch('https://parky-luln.onrender.com/api/Route/calculate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
