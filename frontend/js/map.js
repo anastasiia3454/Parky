@@ -1,9 +1,5 @@
 const map = L.map('map').setView([52.5200, 13.4050], 11);
 
-// ==========================================
-// KARTENSTILE (alle kostenlos, ohne API-Schlüssel)
-// ==========================================
-
 const MAP_STYLE_STORAGE_KEY = 'parky.mapStyle';
 const DEFAULT_MAP_STYLE = 'hot';
 
@@ -37,7 +33,7 @@ function loadSavedMapStyle() {
         const saved = localStorage.getItem(MAP_STYLE_STORAGE_KEY);
         return saved && MAP_STYLES[saved] ? saved : DEFAULT_MAP_STYLE;
     } catch (e) {
-        return DEFAULT_MAP_STYLE; // localStorage kann gesperrt sein (z. B. Privatmodus)
+        return DEFAULT_MAP_STYLE;
     }
 }
 
@@ -74,7 +70,6 @@ function setMapStyle(key, persist = true) {
     });
 }
 
-// Rechnet Koordinaten in Kachel-Koordinaten (Web-Mercator) um
 function lonLatToTile(lat, lon, zoom) {
     const n = Math.pow(2, zoom);
     const x = Math.floor((lon + 180) / 360 * n);
@@ -110,8 +105,6 @@ const MapStyleSwitch = L.Control.extend({
             btn.dataset.style = key;
             btn.title = style.label;
             btn.setAttribute('aria-label', `Kartenstil: ${style.label}`);
-
-            // Vorschau: 2×2 echte Kacheln des jeweiligen Stils
             const thumb = L.DomUtil.create('span', 'map-style-switch__thumb', btn);
             for (let dy = 0; dy < 2; dy++) {
                 for (let dx = 0; dx < 2; dx++) {
@@ -129,7 +122,6 @@ const MapStyleSwitch = L.Control.extend({
             L.DomEvent.on(btn, 'click', (e) => {
                 L.DomEvent.stop(e);
                 let target = key;
-                // Smartphone: nur der aktive Stil ist sichtbar, Tipp wechselt zum nächsten
                 if (window.matchMedia('(max-width: 768px)').matches && key === currentMapStyle) {
                     const keys = Object.keys(MAP_STYLES);
                     target = keys[(keys.indexOf(key) + 1) % keys.length];
@@ -144,7 +136,7 @@ const MapStyleSwitch = L.Control.extend({
 
 setMapStyle(loadSavedMapStyle(), false);
 new MapStyleSwitch().addTo(map);
-setMapStyle(currentMapStyle, false); // Zustand der Buttons aktualisieren
+setMapStyle(currentMapStyle, false);
 
 let startMarker = null;
 let destinationMarker = null;
@@ -161,11 +153,6 @@ window.addEventListener('resize', () => map.invalidateSize());
 
 const sheetQuery = window.matchMedia('(max-width: 1024px)');
 
-/**
- * Abstände für Kartenausschnitt und Popup-Autopan:
- * Auf Smartphone/Tablet verdeckt das eingeklappte Sheet unten einen Teil der Karte,
- * oben rechts liegen die Meldungen (Toasts).
- */
 function viewPadding() {
     return sheetQuery.matches
         ? { top: 70, bottom: 150, side: 24 }
@@ -214,9 +201,6 @@ function attachPopup(marker, html, radius) {
     });
 }
 
-/**
- * Startpunkt: blauer Punkt mit weißem Rand (Apple-Stil), pendelt leicht links/rechts
- */
 function startMarkerIcon() {
     return L.divIcon({
         className: 'parky-marker parky-marker--start',
@@ -226,9 +210,7 @@ function startMarkerIcon() {
     });
 }
 
-/**
- * Endpunkt: Pin mit Kreis und weißem Mittelpunkt (wie im Beispiel), pendelt leicht links/rechts
- */
+
 function destinationMarkerIcon() {
     const svg =
         '<svg viewBox="0 0 34 44" width="34" height="44" aria-hidden="true">' +
@@ -279,6 +261,19 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
     attachPopup(destinationMarker, `<b>Ziel:</b><br>${escapeHtml(name)}`, 40);
 }
 
+function clearMapResults() {
+    [startMarker, destinationMarker, ...parkingMarkers,
+     currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer]
+        .forEach(layer => { if (layer) map.removeLayer(layer); });
+
+    startMarker = null;
+    destinationMarker = null;
+    parkingMarkers = [];
+    currentDriveRouteLayer = null;
+    currentTransitRouteLayer = null;
+    currentWalkRouteLayer = null;
+}
+
 function displayParkingsOnMap(parkings, startLat, startLon) {
     map.invalidateSize();
 
@@ -301,7 +296,6 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
 
         const minutes = Math.round(p.driveDurationSeconds / 60);
 
-        // Nur Informationen – die Route wird über die Gesamtrouten gewählt
         attachPopup(marker, `
             <b>${isBestOption ? '⭐ Bester P+R Platz: ' : ''}${escapeHtml(p.name)}</b><br>
             Fahrzeit Auto: ca. ${minutes} Min.
@@ -326,7 +320,6 @@ async function drawFullIntermodalRoute(
     targetStopLat = null,
     targetStopLon = null
 ) {
-    // 1. Vorherige Routen-Ebenen von der Karte entfernen
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
     if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
@@ -340,7 +333,6 @@ async function drawFullIntermodalRoute(
         return;
     }
 
-    // 2. AUTO-ROUTE: Startadresse -> P+R Parkplatz (HELLBLAU via OSRM)
     const driveUrl = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
 
     try {
@@ -350,7 +342,7 @@ async function drawFullIntermodalRoute(
         if (driveData.routes && driveData.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
                 style: {
-                    color: '#00bfff', // Hellblau
+                    color: '#00bfff',
                     weight: 5,
                     opacity: 0.9
                 }
@@ -360,11 +352,11 @@ async function drawFullIntermodalRoute(
         console.error("Fehler beim Laden der Auto-Route:", err);
     }
 
-    // 3. ÖPNV-ROUTE: Parkplatz -> Ziel-Haltestelle (LILA aus Backend-Polyline)
+
     if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
-                color: '#8b5cf6', // Lila
+                color: '#8b5cf6',
                 weight: 5,
                 opacity: 0.85
             }).addTo(map);
@@ -372,7 +364,6 @@ async function drawFullIntermodalRoute(
             console.error("Fehler beim Dekodieren der ÖPNV-Polyline:", e);
         }
     } else {
-        // Luftlinie als Ersatz, falls Polyline leer ist (vom Parkplatz zur Ziel-Haltestelle)
         const endLat = isValidCoord(targetStopLat) ? targetStopLat : destLat;
         const endLon = isValidCoord(targetStopLon) ? targetStopLon : destLon;
 
@@ -383,7 +374,7 @@ async function drawFullIntermodalRoute(
         }).addTo(map);
     }
 
-    // 4. FUSSWEG: Ziel-Haltestelle -> Endziel (ORANGE GESTRICHELT via OSRM)
+
     const walkStartLat = isValidCoord(targetStopLat) ? targetStopLat : parkLat;
     const walkStartLon = isValidCoord(targetStopLon) ? targetStopLon : parkLon;
 
@@ -396,7 +387,7 @@ async function drawFullIntermodalRoute(
         if (walkData.routes && walkData.routes.length > 0) {
             currentWalkRouteLayer = L.geoJSON(walkData.routes[0].geometry, {
                 style: {
-                    color: '#f97316', // Orange
+                    color: '#f97316',
                     weight: 4,
                     opacity: 0.9,
                     dashArray: '5, 8'
@@ -407,7 +398,7 @@ async function drawFullIntermodalRoute(
         console.error("Fehler beim Laden des Fußwegs:", err);
     }
 
-    // 5. Kartenausschnitt automatisch anpassen
+
     const activeLayers = [];
     if (currentDriveRouteLayer) activeLayers.push(currentDriveRouteLayer);
     if (currentTransitRouteLayer) activeLayers.push(currentTransitRouteLayer);
