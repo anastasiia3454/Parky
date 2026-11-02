@@ -1,3 +1,7 @@
+// ==========================================
+// CODE VON PERSON 1 (UNVERÄNDERT BEIBEHALTEN)
+// ==========================================
+
 const closeWindow = document.getElementById("closeModal");
 const welcomeModal = document.querySelector(".welcome-window");
 
@@ -36,6 +40,11 @@ async function geocodeAddress(address) {
         displayName: data[0].display_name
     };
 }
+
+
+// ==========================================
+// TOAST-MELDUNGEN (oben rechts, blenden sich selbst aus)
+// ==========================================
 
 const TOAST_ICONS = {
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
@@ -117,6 +126,11 @@ function showToast(message, options = {}) {
     return { el, update, close };
 }
 
+
+// ==========================================
+// SUCHHISTORIE ("Neulich gesucht")
+// ==========================================
+
 function saveRecentSearch(start, destination) {
     if (!start || !destination) return;
     let history = JSON.parse(localStorage.getItem('parky_recent_searches')) || [];
@@ -176,7 +190,24 @@ function renderRecentSearches() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', renderRecentSearches);
+document.addEventListener('DOMContentLoaded', () => {
+    renderRecentSearches();
+
+    // Rote Markierung beim Tippen wieder entfernen
+    ['start', 'destination'].forEach(id => {
+        const inputField = document.getElementById(id);
+        if (inputField) {
+            inputField.addEventListener('input', () => {
+                inputField.classList.remove('is-error');
+            });
+        }
+    });
+});
+
+
+// ==========================================
+// SUCHE
+// ==========================================
 
 const AUTO_SELECT_BEST_ROUTE = true;
 
@@ -186,20 +217,45 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
     
-    const startText = document.getElementById('start').value;
-    const destText = document.getElementById('destination').value;
+    const startInput = document.getElementById('start');
+    const destInput = document.getElementById('destination');
+
+    const startText = startInput ? startInput.value.trim() : '';
+    const destText = destInput ? destInput.value.trim() : '';
+
+    // Vorherige Fehlerklassen zurücksetzen
+    if (startInput) startInput.classList.remove('is-error');
+    if (destInput) destInput.classList.remove('is-error');
 
     saveRecentSearch(startText, destText);
 
     resultsDiv.innerHTML = '';
-    clearMapResults();
+    if (typeof clearMapResults === 'function') {
+        clearMapResults();
+    }
+    
     if (submitBtn) submitBtn.classList.add('loading');
 
     const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
 
+    let startCoords, destCoords;
+
     try {
-        const startCoords = await geocodeAddress(startText);
-        const destCoords = await geocodeAddress(destText);
+        // 1. Startadresse geokodieren
+        try {
+            startCoords = await geocodeAddress(startText);
+        } catch (err) {
+            if (startInput) startInput.classList.add('is-error');
+            throw new Error(`Startadresse nicht gefunden: "${startText}"`);
+        }
+
+        // 2. Zieladresse geokodieren
+        try {
+            destCoords = await geocodeAddress(destText);
+        } catch (err) {
+            if (destInput) destInput.classList.add('is-error');
+            throw new Error(`Zieladresse nicht gefunden: "${destText}"`);
+        }
 
         resultsDiv.innerHTML = `
             <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
@@ -243,7 +299,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error(error);
-        const message = error && error.message && error.message.startsWith('Adresse nicht gefunden')
+        const message = error && error.message && (error.message.startsWith('Adresse nicht gefunden') || error.message.startsWith('Startadresse') || error.message.startsWith('Zieladresse'))
             ? error.message
             : 'Fehler bei der Suche oder API-Abfrage.';
         status.update(message, { type: 'error', loading: false, duration: 6000 });
@@ -284,6 +340,11 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
         return [];
     }
 }
+
+
+// ======================================================
+// GESAMTROUTEN (Route/calculate) ALS KARTEN
+// ======================================================
 
 function formatDuration(totalMinutes) {
     const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
@@ -400,7 +461,9 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             });
 
             showRouteDetail(route, card, userAction);
-            showOnlyParking(route.parkingLat, route.parkingLon);
+            if (typeof showOnlyParking === 'function') {
+                showOnlyParking(route.parkingLat, route.parkingLon);
+            }
 
             if (typeof drawFullIntermodalRoute === 'function') {
                 drawFullIntermodalRoute(
@@ -436,6 +499,11 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
     }
 }
+
+
+// ======================================================
+// ROUTENDETAILS
+// ======================================================
 
 const PRODUCT_COLORS = {
     subway: '#2864a6',

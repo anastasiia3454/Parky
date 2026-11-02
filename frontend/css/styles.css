@@ -411,3 +411,11 @@ input[type="range"] {
     background: #e2e6ea;
     border-color: #adb5bd;
 }
+
+/* Roter Rand und leichter Hintergrund bei ungültiger Eingabe */
+input.is-error, 
+textarea.is-error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
