@@ -296,7 +296,8 @@ function renderParkingMarkers(parkings, onlyLat = null, onlyLon = null) {
             color: '#a7f3d0',
             fillColor: isBestOption ? '#047857' : '#16331f',
             fillOpacity: isBestOption ? 1.0 : 0.8,
-            weight: isBestOption ? 3 : 1
+            weight: isBestOption ? 3 : 1,
+            zIndex: 1000
         }).addTo(map);
 
         const minutes = Math.round(p.driveDurationSeconds / 60);
