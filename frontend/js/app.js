@@ -1,7 +1,3 @@
-// ==========================================
-// CODE VON PERSON 1 (UNVERÄNDERT BEIBEHALTEN)
-// ==========================================
-
 const closeWindow = document.getElementById("closeModal");
 const welcomeModal = document.querySelector(".welcome-window");
 
@@ -40,11 +36,6 @@ async function geocodeAddress(address) {
         displayName: data[0].display_name
     };
 }
-
-
-// ==========================================
-// TOAST-MELDUNGEN (oben rechts, blenden sich selbst aus)
-// ==========================================
 
 const TOAST_ICONS = {
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
@@ -126,20 +117,13 @@ function showToast(message, options = {}) {
     return { el, update, close };
 }
 
-
-// ==========================================
-// SUCHHISTORIE ("Neulich gesucht")
-// ==========================================
-
 function saveRecentSearch(start, destination) {
     if (!start || !destination) return;
     let history = JSON.parse(localStorage.getItem('parky_recent_searches')) || [];
     
-    // Doppelte Einträge filtern und neue Suche ganz nach vorne stellen
     history = history.filter(item => !(item.start === start && item.destination === destination));
     history.unshift({ start, destination });
     
-    // Maximal 5 Einträge behalten
     if (history.length > 5) history.pop();
     
     localStorage.setItem('parky_recent_searches', JSON.stringify(history));
@@ -192,13 +176,7 @@ function renderRecentSearches() {
     });
 }
 
-// Beim Laden der Seite direkt ausführen
 document.addEventListener('DOMContentLoaded', renderRecentSearches);
-
-
-// ==========================================
-// SUCHE
-// ==========================================
 
 const AUTO_SELECT_BEST_ROUTE = true;
 
@@ -208,14 +186,13 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
     
-    // 1. Zuerst die Werte aus den Feldern auslesen
     const startText = document.getElementById('start').value;
     const destText = document.getElementById('destination').value;
 
-    // 2. Jetzt erst die Suche in der Historie speichern
     saveRecentSearch(startText, destText);
 
     resultsDiv.innerHTML = '';
+    clearMapResults();
     if (submitBtn) submitBtn.classList.add('loading');
 
     const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
@@ -307,11 +284,6 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
         return [];
     }
 }
-
-
-// ======================================================
-// GESAMTROUTEN (Route/calculate) ALS KARTEN
-// ======================================================
 
 function formatDuration(totalMinutes) {
     const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
@@ -428,6 +400,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             });
 
             showRouteDetail(route, card, userAction);
+            showOnlyParking(route.parkingLat, route.parkingLon);
 
             if (typeof drawFullIntermodalRoute === 'function') {
                 drawFullIntermodalRoute(
@@ -463,11 +436,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
     }
 }
-
-
-// ======================================================
-// ROUTENDETAILS
-// ======================================================
 
 const PRODUCT_COLORS = {
     subway: '#2864a6',

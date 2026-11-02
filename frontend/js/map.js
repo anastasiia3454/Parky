@@ -105,6 +105,7 @@ const MapStyleSwitch = L.Control.extend({
             btn.dataset.style = key;
             btn.title = style.label;
             btn.setAttribute('aria-label', `Kartenstil: ${style.label}`);
+
             const thumb = L.DomUtil.create('span', 'map-style-switch__thumb', btn);
             for (let dy = 0; dy < 2; dy++) {
                 for (let dx = 0; dx < 2; dx++) {
@@ -210,7 +211,6 @@ function startMarkerIcon() {
     });
 }
 
-
 function destinationMarkerIcon() {
     const svg =
         '<svg viewBox="0 0 34 44" width="34" height="44" aria-hidden="true">' +
@@ -269,19 +269,24 @@ function clearMapResults() {
     startMarker = null;
     destinationMarker = null;
     parkingMarkers = [];
+    lastParkings = [];
     currentDriveRouteLayer = null;
     currentTransitRouteLayer = null;
     currentWalkRouteLayer = null;
 }
 
-function displayParkingsOnMap(parkings, startLat, startLon) {
-    map.invalidateSize();
+let lastParkings = [];
 
+function renderParkingMarkers(parkings, onlyLat = null, onlyLon = null) {
     parkingMarkers.forEach(marker => map.removeLayer(marker));
     parkingMarkers = [];
 
     parkings.forEach((p, index) => {
         if (!isValidCoord(p.lat) || !isValidCoord(p.lon)) return;
+
+        if (onlyLat !== null && (Math.abs(p.lat - onlyLat) > 1e-6 || Math.abs(p.lon - onlyLon) > 1e-6)) {
+            return;
+        }
 
         const isBestOption = index === 0;
         const radius = isBestOption ? 12 : 7;
@@ -304,12 +309,24 @@ function displayParkingsOnMap(parkings, startLat, startLon) {
 
         parkingMarkers.push(marker);
     });
+}
+
+function displayParkingsOnMap(parkings, startLat, startLon) {
+    map.invalidateSize();
+
+    lastParkings = parkings;
+    renderParkingMarkers(parkings);
 
     const allLayers = [...parkingMarkers];
     if (startMarker) allLayers.push(startMarker);
     if (destinationMarker) allLayers.push(destinationMarker);
 
     fitToLayers(allLayers, 0.1);
+}
+
+function showOnlyParking(lat, lon) {
+    if (!isValidCoord(lat) || !isValidCoord(lon)) return;
+    renderParkingMarkers(lastParkings, lat, lon);
 }
 
 async function drawFullIntermodalRoute(
@@ -342,7 +359,7 @@ async function drawFullIntermodalRoute(
         if (driveData.routes && driveData.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
                 style: {
-                    color: '#00bfff',
+                    color: '#00bfff', // Hellblau
                     weight: 5,
                     opacity: 0.9
                 }
@@ -352,11 +369,10 @@ async function drawFullIntermodalRoute(
         console.error("Fehler beim Laden der Auto-Route:", err);
     }
 
-
     if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
-                color: '#8b5cf6',
+                color: '#8b5cf6', // Lila
                 weight: 5,
                 opacity: 0.85
             }).addTo(map);
@@ -373,7 +389,6 @@ async function drawFullIntermodalRoute(
             dashArray: '6, 8'
         }).addTo(map);
     }
-
 
     const walkStartLat = isValidCoord(targetStopLat) ? targetStopLat : parkLat;
     const walkStartLon = isValidCoord(targetStopLon) ? targetStopLon : parkLon;
@@ -397,7 +412,6 @@ async function drawFullIntermodalRoute(
     } catch (err) {
         console.error("Fehler beim Laden des Fußwegs:", err);
     }
-
 
     const activeLayers = [];
     if (currentDriveRouteLayer) activeLayers.push(currentDriveRouteLayer);
