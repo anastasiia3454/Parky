@@ -156,7 +156,6 @@ input[type="range"] {
     cursor: pointer;
 }
 
-/* Button-Container & Ausrichtung */
 .form-actions {
     display: flex;
     align-items: center;
@@ -192,12 +191,12 @@ input[type="range"] {
 .btn-secondary {
     flex: 0 0 48px;
     height: 48px;
-    background-color: var(--bg-dark);
-    color: #ffffff;
-    border: 1.5px solid #374151;
+    background-color: #f3f4f6;
+    color: var(--text-muted);
+    border: 1.5px solid var(--border);
     border-radius: var(--radius-md);
-    font-size: 1.2rem;
-    font-weight: 800;
+    font-size: 1.1rem;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -206,11 +205,11 @@ input[type="range"] {
 }
 
 .btn-secondary:hover {
-    background: #870411;
-    border-color: #870411;
-    color: #ffffff;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #ef4444;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 117, 31, 0.2);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
 }
 
 .btn-secondary:active {
@@ -333,6 +332,7 @@ input[type="range"] {
         opacity: 0;
         transform: translateY(14px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -340,14 +340,27 @@ input[type="range"] {
 }
 
 @keyframes pulseGlow {
-    0% { box-shadow: 0 0 0 0 rgba(255, 117, 31, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 117, 31, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 117, 31, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 117, 31, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 117, 31, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 117, 31, 0);
+    }
 }
 
 @keyframes spinnerRotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .results-container p,
