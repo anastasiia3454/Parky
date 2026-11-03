@@ -22,6 +22,12 @@ if (closeWindow && welcomeModal) {
 // Globaler Controller zum Abbrechen laufender Netzwerk-Anfragen
 let currentSearchController = null;
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = String(text ?? '');
+    return div.innerHTML;
+}
+
 async function geocodeAddress(address, signal) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
 
@@ -211,13 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('btnReset');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            // 1. Laufende Netzwerkanfragen sofort abbrechen
             if (currentSearchController) {
                 currentSearchController.abort();
                 currentSearchController = null;
             }
 
-            // 2. Lade-Animation vom Such-Button direkt entfernen
             const submitBtn = document.getElementById('btnSearch');
             if (submitBtn) submitBtn.classList.remove('loading');
 
@@ -264,7 +268,6 @@ const AUTO_SELECT_BEST_ROUTE = true;
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Vorherige Suche abbrechen, falls aktiv
     if (currentSearchController) {
         currentSearchController.abort();
     }
@@ -280,7 +283,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     const startText = startInput ? startInput.value.trim() : '';
     const destText = destInput ? destInput.value.trim() : '';
 
-    // Vorherige Fehlerklassen zurücksetzen
     if (startInput) startInput.classList.remove('is-error');
     if (destInput) destInput.classList.remove('is-error');
 
@@ -298,7 +300,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     let startCoords, destCoords;
 
     try {
-        // 1. Startadresse geokodieren
         try {
             startCoords = await geocodeAddress(startText, signal);
         } catch (err) {
@@ -307,7 +308,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             throw new Error(`Startadresse nicht gefunden: "${startText}"`);
         }
 
-        // 2. Zieladresse geokodieren
         try {
             destCoords = await geocodeAddress(destText, signal);
         } catch (err) {
@@ -325,10 +325,10 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
         status.update('Suche optimale P+R-Parkplätze …');
 
-        const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
-        const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 100 : 0.5;
+        // Korrigierte ID 'weightSpeed' entsprechend der index.html
+        const sliderElement = document.getElementById('weightSpeed') || document.querySelector('input[type="range"]');
+        const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 5 : 0.5; // angepasst auf Skala 1-5
 
-        // Start- und Ziel-Marker inklusive übergebener Adresse setzen
         setStartMarker(startCoords.lat, startCoords.lon, startCoords.displayName);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 
@@ -387,14 +387,7 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
         }
 
         const data = await response.json();
-        console.log("Gefundene P+R Daten:", data);
-
         const parkings = data.parkings || [];
-        const directCarRoute = data.directCarRoute;
-
-        if (directCarRoute) {
-            console.log(`Direkte Autofahrt: ca. ${Math.round(directCarRoute.durationSeconds / 60)} Min.`);
-        }
 
         if (typeof displayParkingsOnMap === "function") {
             displayParkingsOnMap(parkings, lat, lon);
