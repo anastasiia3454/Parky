@@ -227,7 +227,8 @@ function destinationMarkerIcon() {
     });
 }
 
-function setStartMarker(lat, lon) {
+
+function setStartMarker(lat, lon, name = 'Dein Startpunkt') {
     if (!isValidCoord(lat) || !isValidCoord(lon)) return;
 
     if (startMarker) {
@@ -241,7 +242,7 @@ function setStartMarker(lat, lon) {
         keyboard: false
     }).addTo(map);
 
-    attachPopup(startMarker, '<b>Dein Startpunkt</b>', 11);
+    attachPopup(startMarker, `<b>Startpunkt:</b><br>${escapeHtml(name)}`, 11);
 }
 
 function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
