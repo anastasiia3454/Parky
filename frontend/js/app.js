@@ -19,13 +19,17 @@ if (closeWindow && welcomeModal) {
     });
 }
 
-async function geocodeAddress(address) {
+// Globaler Controller zum Abbrechen laufender Netzwerk-Anfragen
+let currentSearchController = null;
+
+async function geocodeAddress(address, signal) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
 
     const response = await fetch(url, {
         headers: {
             'User-Agent': 'ParkAndRideApp/1.0'
-        }
+        },
+        signal
     });
 
     const data = await response.json();
@@ -207,6 +211,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('btnReset');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
+            // 1. Laufende Netzwerkanfragen sofort abbrechen
+            if (currentSearchController) {
+                currentSearchController.abort();
+                currentSearchController = null;
+            }
+
+            // 2. Lade-Animation vom Such-Button direkt entfernen
+            const submitBtn = document.getElementById('btnSearch');
+            if (submitBtn) submitBtn.classList.remove('loading');
+
             const startInput = document.getElementById('start');
             const destInput = document.getElementById('destination');
             
@@ -250,6 +264,13 @@ const AUTO_SELECT_BEST_ROUTE = true;
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    // Vorherige Suche abbrechen, falls aktiv
+    if (currentSearchController) {
+        currentSearchController.abort();
+    }
+    currentSearchController = new AbortController();
+    const { signal } = currentSearchController;
+
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
     
@@ -279,19 +300,23 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     try {
         // 1. Startadresse geokodieren
         try {
-            startCoords = await geocodeAddress(startText);
+            startCoords = await geocodeAddress(startText, signal);
         } catch (err) {
+            if (err.name === 'AbortError') return;
             if (startInput) startInput.classList.add('is-error');
             throw new Error(`Startadresse nicht gefunden: "${startText}"`);
         }
 
         // 2. Zieladresse geokodieren
         try {
-            destCoords = await geocodeAddress(destText);
+            destCoords = await geocodeAddress(destText, signal);
         } catch (err) {
+            if (err.name === 'AbortError') return;
             if (destInput) destInput.classList.add('is-error');
             throw new Error(`Zieladresse nicht gefunden: "${destText}"`);
         }
+
+        if (signal.aborted) return;
 
         resultsDiv.innerHTML = `
             <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
@@ -312,8 +337,11 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             startCoords.lon,
             destCoords.lat,
             destCoords.lon,
-            sliderValue
+            sliderValue,
+            signal
         );
+
+        if (signal.aborted) return;
 
         if (parkings && parkings.length > 0) {
             const n = parkings.length;
@@ -329,12 +357,13 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
         const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
         try {
-            await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
+            await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon, signal);
         } finally {
             routeStatus.close();
         }
 
     } catch (error) {
+        if (error.name === 'AbortError') return;
         console.error(error);
         const message = error && error.message && (error.message.startsWith('Adresse nicht gefunden') || error.message.startsWith('Startadresse') || error.message.startsWith('Zieladresse'))
             ? error.message
@@ -345,14 +374,14 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     }
 });
 
-async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5) {
+async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5, signal) {
     try {
         let url = `https://parky-luln.onrender.com/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
         if (destLat && destLon) {
             url += `&destLat=${destLat}&destLon=${destLon}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url, { signal });
         if (!response.ok) {
             throw new Error(`Fehler beim Laden: ${response.statusText}`);
         }
@@ -373,6 +402,7 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
 
         return parkings;
     } catch (error) {
+        if (error.name === 'AbortError') return [];
         console.error("API-Fehler:", error);
         return [];
     }
@@ -442,7 +472,7 @@ function buildRouteCard(route, index, isBest) {
     return card;
 }
 
-async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
+async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon, signal) {
     try {
         const response = await fetch('https://parky-luln.onrender.com/api/Route/calculate', {
             method: 'POST',
@@ -453,7 +483,8 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 targetLat: targetLat,
                 targetLon: targetLon,
                 departureTime: new Date().toISOString()
-            })
+            }),
+            signal
         });
 
         if (!response.ok) {
@@ -532,6 +563,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             selectRoute(routes[bestIndex], cards[bestIndex], false);
         }
     } catch (err) {
+        if (err.name === 'AbortError') return;
         console.error("Fehler bei der intermodalen Routenberechnung:", err);
         showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
     }
