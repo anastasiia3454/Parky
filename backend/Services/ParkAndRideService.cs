@@ -112,35 +112,51 @@ namespace Backend.Services
             return candidates;
         }
 
-        // Fragt die Overpass-Server der Reihe nach ab, bis einer antwortet
+        // Fragt alle Overpass-Server gleichzeitig ab. Die erste erfolgreiche Antwort gewinnt.
         private static async Task<List<ParkingCandidate>> QueryOverpassAsync(HttpClient client, string query)
         {
-            HttpResponseMessage? response = null;
+            var pending = OverpassEndpoints
+                .Select(endpoint => TryPostOverpassAsync(client, endpoint, query))
+                .ToList();
 
-            foreach (var endpoint in OverpassEndpoints)
+            while (pending.Count > 0)
             {
-                try
+                var finished = await Task.WhenAny(pending);
+                pending.Remove(finished);
+
+                var result = await finished;
+                if (result != null)
                 {
-                    var content = new FormUrlEncodedContent(new Dictionary<string, string> { { "data", query } });
-                    var res = await client.PostAsync(endpoint, content);
-                    if (res.IsSuccessStatusCode)
-                    {
-                        response = res;
-                        break;
-                    }
-                }
-                catch
-                {
-                    // nächsten Server probieren
+                    return result;
                 }
             }
 
-            if (response == null)
-            {
-                throw new OverpassUnavailableException();
-            }
+            throw new OverpassUnavailableException();
+        }
 
-            var jsonString = await response.Content.ReadAsStringAsync();
+        // Ein einzelner Overpass-Server. Gibt null zurück, wenn er fehlschlägt.
+        private static async Task<List<ParkingCandidate>?> TryPostOverpassAsync(HttpClient client, string endpoint, string query)
+        {
+            try
+            {
+                var content = new FormUrlEncodedContent(new Dictionary<string, string> { { "data", query } });
+                using var response = await client.PostAsync(endpoint, content);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                var jsonString = await response.Content.ReadAsStringAsync();
+                return ParseOverpassElements(jsonString);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static List<ParkingCandidate> ParseOverpassElements(string jsonString)
+        {
             using var doc = JsonDocument.Parse(jsonString);
 
             var result = new List<ParkingCandidate>();
