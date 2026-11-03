@@ -1,7 +1,3 @@
-// ==========================================
-// CODE VON PERSON 1 (UNVERÄNDERT BEIBEHALTEN)
-// ==========================================
-
 const closeWindow = document.getElementById("closeModal");
 const welcomeModal = document.querySelector(".welcome-window");
 
@@ -40,11 +36,6 @@ async function geocodeAddress(address) {
         displayName: data[0].display_name
     };
 }
-
-
-// ==========================================
-// TOAST-MELDUNGEN (oben rechts, blenden sich selbst aus)
-// ==========================================
 
 const TOAST_ICONS = {
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
@@ -126,11 +117,6 @@ function showToast(message, options = {}) {
     return { el, update, close };
 }
 
-
-// ==========================================
-// SUCHHISTORIE ("Neulich gesucht")
-// ==========================================
-
 function saveRecentSearch(start, destination) {
     if (!start || !destination) return;
     let history = JSON.parse(localStorage.getItem('parky_recent_searches')) || [];
@@ -190,62 +176,7 @@ function renderRecentSearches() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    renderRecentSearches();
-
-    ['start', 'destination'].forEach(id => {
-        const inputField = document.getElementById(id);
-        if (inputField) {
-            inputField.addEventListener('input', () => {
-                inputField.classList.remove('is-error');
-            });
-        }
-    });
-
-    // Event-Listener für den Zurücksetzen-Button ("X")
-    const resetBtn = document.getElementById('btnReset');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            const submitBtn = document.getElementById('btnSearch');
-            if (submitBtn) submitBtn.classList.remove('loading');
-
-            const startInput = document.getElementById('start');
-            const destInput = document.getElementById('destination');
-            
-            if (startInput) {
-                startInput.value = '';
-                startInput.classList.remove('is-error');
-            }
-            if (destInput) {
-                destInput.value = '';
-                destInput.classList.remove('is-error');
-            }
-
-            const resultsDiv = document.getElementById('results');
-            if (resultsDiv) {
-                resultsDiv.innerHTML = `
-                    <div class="empty-state">
-                        <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
-                    </div>
-                `;
-            }
-
-            const intermodalContainer = document.getElementById('intermodal-results-container');
-            if (intermodalContainer) intermodalContainer.remove();
-
-            if (typeof clearMapResults === 'function') {
-                clearMapResults();
-            }
-
-            showToast('Ansicht erfolgreich zurückgesetzt.', { type: 'info', duration: 3000 });
-        });
-    }
-});
-
-
-// ==========================================
-// SUCHE
-// ==========================================
+document.addEventListener('DOMContentLoaded', renderRecentSearches);
 
 const AUTO_SELECT_BEST_ROUTE = true;
 
@@ -255,42 +186,20 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
     
-    const startInput = document.getElementById('start');
-    const destInput = document.getElementById('destination');
-
-    const startText = startInput ? startInput.value.trim() : '';
-    const destText = destInput ? destInput.value.trim() : '';
-
-    if (startInput) startInput.classList.remove('is-error');
-    if (destInput) destInput.classList.remove('is-error');
+    const startText = document.getElementById('start').value;
+    const destText = document.getElementById('destination').value;
 
     saveRecentSearch(startText, destText);
 
     resultsDiv.innerHTML = '';
-    if (typeof clearMapResults === 'function') {
-        clearMapResults();
-    }
-    
+    clearMapResults();
     if (submitBtn) submitBtn.classList.add('loading');
 
     const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
 
-    let startCoords, destCoords;
-
     try {
-        try {
-            startCoords = await geocodeAddress(startText);
-        } catch (err) {
-            if (startInput) startInput.classList.add('is-error');
-            throw new Error(`Startadresse nicht gefunden: "${startText}"`);
-        }
-
-        try {
-            destCoords = await geocodeAddress(destText);
-        } catch (err) {
-            if (destInput) destInput.classList.add('is-error');
-            throw new Error(`Zieladresse nicht gefunden: "${destText}"`);
-        }
+        const startCoords = await geocodeAddress(startText);
+        const destCoords = await geocodeAddress(destText);
 
         resultsDiv.innerHTML = `
             <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
@@ -299,10 +208,10 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
         status.update('Suche optimale P+R-Parkplätze …');
 
-        const sliderElement = document.getElementById('weightSpeed') || document.querySelector('input[type="range"]');
-        const sliderValue = sliderElement ? parseFloat(sliderElement.value) : 3;
+        const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
+        const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 100 : 0.5;
 
-        setStartMarker(startCoords.lat, startCoords.lon, startCoords.displayName);
+        setStartMarker(startCoords.lat, startCoords.lon);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 
         const parkings = await fetchParkAndRide(
@@ -334,7 +243,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error(error);
-        const message = error && error.message && (error.message.startsWith('Adresse nicht gefunden') || error.message.startsWith('Startadresse') || error.message.startsWith('Zieladresse'))
+        const message = error && error.message && error.message.startsWith('Adresse nicht gefunden')
             ? error.message
             : 'Fehler bei der Suche oder API-Abfrage.';
         status.update(message, { type: 'error', loading: false, duration: 6000 });
@@ -343,7 +252,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     }
 });
 
-async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 3) {
+async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5) {
     try {
         let url = `https://parky-luln.onrender.com/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
         if (destLat && destLon) {
@@ -352,11 +261,19 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
 
         const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`Fehler beim Laden: ${response.statusText}`);
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.message || `Fehler beim Laden: ${response.statusText}`);
         }
 
         const data = await response.json();
+        console.log("Gefundene P+R Daten:", data);
+
         const parkings = data.parkings || [];
+        const directCarRoute = data.directCarRoute;
+
+        if (directCarRoute) {
+            console.log(`Direkte Autofahrt: ca. ${Math.round(directCarRoute.durationSeconds / 60)} Min.`);
+        }
 
         if (typeof displayParkingsOnMap === "function") {
             displayParkingsOnMap(parkings, lat, lon);
@@ -365,14 +282,10 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
         return parkings;
     } catch (error) {
         console.error("API-Fehler:", error);
+        showToast(error.message, { type: 'error', duration: 6000 });
         return [];
     }
 }
-
-
-// ======================================================
-// GESAMTROUTEN (Route/calculate) ALS KARTEN
-// ======================================================
 
 function formatDuration(totalMinutes) {
     const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
@@ -489,9 +402,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             });
 
             showRouteDetail(route, card, userAction);
-            if (typeof showOnlyParking === 'function') {
-                showOnlyParking(route.parkingLat, route.parkingLon);
-            }
+            showOnlyParking(route.parkingLat, route.parkingLon);
 
             if (typeof drawFullIntermodalRoute === 'function') {
                 drawFullIntermodalRoute(
@@ -527,11 +438,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
     }
 }
-
-
-// ======================================================
-// ROUTENDETAILS
-// ======================================================
 
 const PRODUCT_COLORS = {
     subway: '#2864a6',

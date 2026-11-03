@@ -32,9 +32,9 @@ namespace Backend.Controllers
 
                 return Ok(result);
             }
-            catch (OverpassUnavailableException ex)
+            catch (OverpassUnavailableException)
             {
-                return Problem(ex.Message);
+                return StatusCode(503, new { message = "Parkplatzdaten gerade nicht verfügbar, bitte später erneut versuchen." });
             }
             catch (Exception ex)
             {

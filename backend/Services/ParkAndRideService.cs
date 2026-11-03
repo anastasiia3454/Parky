@@ -35,6 +35,9 @@ namespace Backend.Services
         };
 
         private const int SearchRadiusMeters = 10000;
+        private const double GridDegrees = 0.02;
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
+        private const int MaxAttempts = 2;
 
         private readonly IHttpClientFactory _clientFactory;
         private readonly IMemoryCache _cache;
@@ -74,7 +77,9 @@ namespace Backend.Services
 
         private async Task<List<ParkingCandidate>> GetCandidatesAsync(double lat, double lon)
         {
-            string cacheKey = $"pr_eval_{Math.Round(lat, 3)}_{Math.Round(lon, 3)}";
+            double gridLat = Math.Round(lat / GridDegrees) * GridDegrees;
+            double gridLon = Math.Round(lon / GridDegrees) * GridDegrees;
+            string cacheKey = $"pr_eval_{gridLat.ToString("F2", CultureInfo.InvariantCulture)}_{gridLon.ToString("F2", CultureInfo.InvariantCulture)}";
 
             if (_cache.TryGetValue(cacheKey, out List<ParkingCandidate>? cached) && cached != null)
             {
@@ -85,8 +90,8 @@ namespace Backend.Services
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
 
-            string latStr = lat.ToString(CultureInfo.InvariantCulture);
-            string lonStr = lon.ToString(CultureInfo.InvariantCulture);
+            string latStr = gridLat.ToString(CultureInfo.InvariantCulture);
+            string lonStr = gridLon.ToString(CultureInfo.InvariantCulture);
 
             string overpassQuery = $"[out:json][timeout:25];nwr[\"park_ride\"=\"yes\"](around:{SearchRadiusMeters},{latStr},{lonStr});out center;";
 
@@ -117,19 +122,27 @@ namespace Backend.Services
         // Fragt alle Overpass-Server gleichzeitig ab. Die erste erfolgreiche Antwort gewinnt.
         private static async Task<List<ParkingCandidate>> QueryOverpassAsync(HttpClient client, string query)
         {
-            var pending = OverpassEndpoints
-                .Select(endpoint => TryPostOverpassAsync(client, endpoint, query))
-                .ToList();
-
-            while (pending.Count > 0)
+            for (int attempt = 1; attempt <= MaxAttempts; attempt++)
             {
-                var finished = await Task.WhenAny(pending);
-                pending.Remove(finished);
+                var pending = OverpassEndpoints
+                    .Select(endpoint => TryPostOverpassAsync(client, endpoint, query))
+                    .ToList();
 
-                var result = await finished;
-                if (result != null)
+                while (pending.Count > 0)
                 {
-                    return result;
+                    var finished = await Task.WhenAny(pending);
+                    pending.Remove(finished);
+
+                    var result = await finished;
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+
+                if (attempt < MaxAttempts)
+                {
+                    await Task.Delay(RetryDelay);
                 }
             }
 
