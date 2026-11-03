@@ -19,23 +19,13 @@ if (closeWindow && welcomeModal) {
     });
 }
 
-// Globaler Controller zum Abbrechen laufender Netzwerk-Anfragen
-let currentSearchController = null;
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = String(text ?? '');
-    return div.innerHTML;
-}
-
-async function geocodeAddress(address, signal) {
+async function geocodeAddress(address) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
 
     const response = await fetch(url, {
         headers: {
             'User-Agent': 'ParkAndRideApp/1.0'
-        },
-        signal
+        }
     });
 
     const data = await response.json();
@@ -212,14 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Event-Listener für den Zurücksetzen-Button ("X")
     const resetBtn = document.getElementById('btnReset');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            if (currentSearchController) {
-                currentSearchController.abort();
-                currentSearchController = null;
-            }
-
             const submitBtn = document.getElementById('btnSearch');
             if (submitBtn) submitBtn.classList.remove('loading');
 
@@ -266,12 +252,6 @@ const AUTO_SELECT_BEST_ROUTE = true;
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (currentSearchController) {
-        currentSearchController.abort();
-    }
-    currentSearchController = new AbortController();
-    const { signal } = currentSearchController;
-
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
     
@@ -299,22 +279,18 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
     try {
         try {
-            startCoords = await geocodeAddress(startText, signal);
+            startCoords = await geocodeAddress(startText);
         } catch (err) {
-            if (err.name === 'AbortError') return;
             if (startInput) startInput.classList.add('is-error');
             throw new Error(`Startadresse nicht gefunden: "${startText}"`);
         }
 
         try {
-            destCoords = await geocodeAddress(destText, signal);
+            destCoords = await geocodeAddress(destText);
         } catch (err) {
-            if (err.name === 'AbortError') return;
             if (destInput) destInput.classList.add('is-error');
             throw new Error(`Zieladresse nicht gefunden: "${destText}"`);
         }
-
-        if (signal.aborted) return;
 
         resultsDiv.innerHTML = `
             <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
@@ -334,11 +310,8 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             startCoords.lon,
             destCoords.lat,
             destCoords.lon,
-            sliderValue,
-            signal
+            sliderValue
         );
-
-        if (signal.aborted) return;
 
         if (parkings && parkings.length > 0) {
             const n = parkings.length;
@@ -346,21 +319,20 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
                 n === 1 ? '1 P+R-Parkplatz gefunden' : `${n} P+R-Parkplätze gefunden`,
                 { type: 'success', loading: false, duration: 4000 }
             );
-
-            const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
-            try {
-                await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon, signal);
-            } finally {
-                routeStatus.close();
-            }
         } else {
             status.update('Keine P+R-Parkplätze im Umkreis von 20 km gefunden.', {
                 type: 'warning', loading: false, duration: 6000
             });
         }
 
+        const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
+        try {
+            await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
+        } finally {
+            routeStatus.close();
+        }
+
     } catch (error) {
-        if (error.name === 'AbortError') return;
         console.error(error);
         const message = error && error.message && (error.message.startsWith('Adresse nicht gefunden') || error.message.startsWith('Startadresse') || error.message.startsWith('Zieladresse'))
             ? error.message
@@ -371,16 +343,16 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     }
 });
 
-async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 3, signal) {
+async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 3) {
     try {
         let url = `https://parky-luln.onrender.com/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
         if (destLat && destLon) {
             url += `&destLat=${destLat}&destLon=${destLon}`;
         }
 
-        const response = await fetch(url, { signal });
+        const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`Fehler beim Laden: ${response.status} ${response.statusText}`);
+            throw new Error(`Fehler beim Laden: ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -392,9 +364,8 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
 
         return parkings;
     } catch (error) {
-        if (error.name === 'AbortError') return [];
         console.error("API-Fehler:", error);
-        throw error;
+        return [];
     }
 }
 
@@ -462,7 +433,7 @@ function buildRouteCard(route, index, isBest) {
     return card;
 }
 
-async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon, signal) {
+async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
     try {
         const response = await fetch('https://parky-luln.onrender.com/api/Route/calculate', {
             method: 'POST',
@@ -473,8 +444,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 targetLat: targetLat,
                 targetLon: targetLon,
                 departureTime: new Date().toISOString()
-            }),
-            signal
+            })
         });
 
         if (!response.ok) {
@@ -553,7 +523,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             selectRoute(routes[bestIndex], cards[bestIndex], false);
         }
     } catch (err) {
-        if (err.name === 'AbortError') return;
         console.error("Fehler bei der intermodalen Routenberechnung:", err);
         showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
     }
