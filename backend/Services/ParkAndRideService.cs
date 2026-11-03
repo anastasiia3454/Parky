@@ -34,6 +34,8 @@ namespace Backend.Services
             "https://overpass.kumi.systems/api/interpreter"
         };
 
+        private const int SearchRadiusMeters = 10000;
+
         private readonly IHttpClientFactory _clientFactory;
         private readonly IMemoryCache _cache;
 
@@ -80,13 +82,13 @@ namespace Backend.Services
             }
 
             var client = _clientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(20);
+            client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
 
             string latStr = lat.ToString(CultureInfo.InvariantCulture);
             string lonStr = lon.ToString(CultureInfo.InvariantCulture);
 
-            string overpassQuery = $"[out:json][timeout:15];(node[\"park_ride\"=\"yes\"](around:20000,{latStr},{lonStr});way[\"park_ride\"=\"yes\"](around:20000,{latStr},{lonStr}););out center;";
+            string overpassQuery = $"[out:json][timeout:25];nwr[\"park_ride\"=\"yes\"](around:{SearchRadiusMeters},{latStr},{lonStr});out center;";
 
             var rawCandidates = await QueryOverpassAsync(client, overpassQuery);
             if (rawCandidates.Count == 0)
@@ -108,7 +110,7 @@ namespace Backend.Services
                 candidates = rawCandidates.Take(15).ToList();
             }
 
-            _cache.Set(cacheKey, candidates, TimeSpan.FromMinutes(30));
+            _cache.Set(cacheKey, candidates, TimeSpan.FromHours(2));
             return candidates;
         }
 
