@@ -203,7 +203,6 @@ function renderRecentSearches() {
 document.addEventListener('DOMContentLoaded', () => {
     renderRecentSearches();
 
-    // Rote Markierung beim Tippen wieder entfernen
     ['start', 'destination'].forEach(id => {
         const inputField = document.getElementById(id);
         if (inputField) {
@@ -213,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Event-Listener für den Zurücksetzen-Button ("X")
     const resetBtn = document.getElementById('btnReset');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
@@ -325,9 +323,8 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
         status.update('Suche optimale P+R-Parkplätze …');
 
-        // Korrigierte ID 'weightSpeed' entsprechend der index.html
         const sliderElement = document.getElementById('weightSpeed') || document.querySelector('input[type="range"]');
-        const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 5 : 0.5; // angepasst auf Skala 1-5
+        const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 5 : 0.5;
 
         setStartMarker(startCoords.lat, startCoords.lon, startCoords.displayName);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
@@ -349,17 +346,17 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
                 n === 1 ? '1 P+R-Parkplatz gefunden' : `${n} P+R-Parkplätze gefunden`,
                 { type: 'success', loading: false, duration: 4000 }
             );
+
+            const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
+            try {
+                await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon, signal);
+            } finally {
+                routeStatus.close();
+            }
         } else {
             status.update('Keine P+R-Parkplätze im Umkreis von 20 km gefunden.', {
                 type: 'warning', loading: false, duration: 6000
             });
-        }
-
-        const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
-        try {
-            await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon, signal);
-        } finally {
-            routeStatus.close();
         }
 
     } catch (error) {
@@ -367,7 +364,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         console.error(error);
         const message = error && error.message && (error.message.startsWith('Adresse nicht gefunden') || error.message.startsWith('Startadresse') || error.message.startsWith('Zieladresse'))
             ? error.message
-            : 'Fehler bei der Suche oder API-Abfrage.';
+            : 'Fehler bei der Suche oder API-Abfrage (Server antwortet evtl. mit 500).';
         status.update(message, { type: 'error', loading: false, duration: 6000 });
     } finally {
         if (submitBtn) submitBtn.classList.remove('loading');
@@ -383,7 +380,7 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
 
         const response = await fetch(url, { signal });
         if (!response.ok) {
-            throw new Error(`Fehler beim Laden: ${response.statusText}`);
+            throw new Error(`Fehler beim Laden: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -397,7 +394,7 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
     } catch (error) {
         if (error.name === 'AbortError') return [];
         console.error("API-Fehler:", error);
-        return [];
+        throw error; // Fehler nach oben werfen, damit er im Haupt-Catch gefangen wird
     }
 }
 
