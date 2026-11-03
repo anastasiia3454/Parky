@@ -29,11 +29,12 @@ body {
     color: var(--text-main);
 }
 
-#closeModal{
+#closeModal {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     transition: all 0.2s ease;
 }
-#closeModal:hover{
+
+#closeModal:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(255, 117, 31, 0.3);
 }
@@ -91,8 +92,13 @@ body {
     display: inline-block;
 }
 
-.start-dot { background-color: #111827; }
-.dest-dot { background-color: #ef4444; }
+.start-dot {
+    background-color: #111827;
+}
+
+.dest-dot {
+    background-color: #ef4444;
+}
 
 .input-group input[type="text"] {
     width: 100%;
@@ -150,10 +156,21 @@ input[type="range"] {
     cursor: pointer;
 }
 
+/* Button-Container & Ausrichtung */
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
 
 .btn-submit {
-    width: 100%;
-    padding: 14px;
+    flex: 1;
+    height: 48px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: var(--bg-dark);
     color: white;
     font-family: inherit;
@@ -164,13 +181,40 @@ input[type="range"] {
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
-    margin-top: 8px;
 }
 
 .btn-submit:hover {
     background-color: var(--primary);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(255, 117, 31, 0.3);
+}
+
+.btn-secondary {
+    flex: 0 0 48px;
+    height: 48px;
+    background-color: var(--bg-dark);
+    color: #ffffff;
+    border: 1.5px solid #374151;
+    border-radius: var(--radius-md);
+    font-size: 1.2rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-secondary:hover {
+    background: #870411;
+    border-color: #870411;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 117, 31, 0.2);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
 }
 
 .divider {
@@ -284,29 +328,6 @@ input[type="range"] {
     margin: 0;
 }
 
-/* Gefunden / Status-Badges */
-#results p[style*="color: green"] {
-    background-color: #ecfdf5 !important;
-    border-color: #a7f3d0 !important;
-    color: #047857 !important;
-    font-weight: 700;
-}
-
-#results p[style*="color: blue"] {
-    background-color: #eff6ff !important;
-    border-color: #bfdbfe !important;
-    color: #1d4ed8 !important;
-    font-weight: 600;
-}
-
-#results p[style*="color: orange"]{
-    border-color: #fde68a;
-    background-color: #e05e0d;
-    color: #ffffff;
-    font-weight: 600;
-}
-
-
 @keyframes slideInUp {
     from {
         opacity: 0;
@@ -319,15 +340,9 @@ input[type="range"] {
 }
 
 @keyframes pulseGlow {
-    0% {
-        box-shadow: 0 0 0 0 rgba(255, 117, 31, 0.4);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(255, 117, 31, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(255, 117, 31, 0);
-    }
+    0% { box-shadow: 0 0 0 0 rgba(255, 117, 31, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 117, 31, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 117, 31, 0); }
 }
 
 @keyframes spinnerRotate {
@@ -335,7 +350,7 @@ input[type="range"] {
     100% { transform: rotate(360deg); }
 }
 
-.results-container p, 
+.results-container p,
 .results-card {
     animation: slideInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -366,14 +381,6 @@ input[type="range"] {
 
 .input-group input[type="text"]:focus {
     animation: pulseGlow 1.5s infinite;
-}
-
-.welcome-card {
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.welcome-window.hidden .welcome-card {
-    transform: scale(0.85) translateY(-20px);
 }
 
 .recent-searches-container {
@@ -412,8 +419,7 @@ input[type="range"] {
     border-color: #adb5bd;
 }
 
-/* Roter Rand und leichter Hintergrund bei ungültiger Eingabe */
-input.is-error, 
+input.is-error,
 textarea.is-error {
     border-color: #ef4444 !important;
     background-color: #fef2f2 !important;

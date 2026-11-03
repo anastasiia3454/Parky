@@ -202,6 +202,42 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    // Event-Listener für den Zurücksetzen-Button ("X")
+    const resetBtn = document.getElementById('btnReset');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            const startInput = document.getElementById('start');
+            const destInput = document.getElementById('destination');
+            
+            if (startInput) {
+                startInput.value = '';
+                startInput.classList.remove('is-error');
+            }
+            if (destInput) {
+                destInput.value = '';
+                destInput.classList.remove('is-error');
+            }
+
+            const resultsDiv = document.getElementById('results');
+            if (resultsDiv) {
+                resultsDiv.innerHTML = `
+                    <div class="empty-state">
+                        <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
+                    </div>
+                `;
+            }
+
+            const intermodalContainer = document.getElementById('intermodal-results-container');
+            if (intermodalContainer) intermodalContainer.remove();
+
+            if (typeof clearMapResults === 'function') {
+                clearMapResults();
+            }
+
+            showToast('Ansicht erfolgreich zurückgesetzt.', { type: 'info', duration: 3000 });
+        });
+    }
 });
 
 
