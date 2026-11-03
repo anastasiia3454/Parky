@@ -324,7 +324,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         status.update('Suche optimale P+R-Parkplätze …');
 
         const sliderElement = document.getElementById('weightSpeed') || document.querySelector('input[type="range"]');
-        const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 5 : 0.5;
+        const sliderValue = sliderElement ? parseFloat(sliderElement.value) : 3;
 
         setStartMarker(startCoords.lat, startCoords.lon, startCoords.displayName);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
@@ -364,14 +364,14 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         console.error(error);
         const message = error && error.message && (error.message.startsWith('Adresse nicht gefunden') || error.message.startsWith('Startadresse') || error.message.startsWith('Zieladresse'))
             ? error.message
-            : 'Fehler bei der Suche oder API-Abfrage (Server antwortet evtl. mit 500).';
+            : 'Fehler bei der Suche oder API-Abfrage.';
         status.update(message, { type: 'error', loading: false, duration: 6000 });
     } finally {
         if (submitBtn) submitBtn.classList.remove('loading');
     }
 });
 
-async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5, signal) {
+async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 3, signal) {
     try {
         let url = `https://parky-luln.onrender.com/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
         if (destLat && destLon) {
@@ -394,7 +394,7 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
     } catch (error) {
         if (error.name === 'AbortError') return [];
         console.error("API-Fehler:", error);
-        throw error; // Fehler nach oben werfen, damit er im Haupt-Catch gefangen wird
+        throw error;
     }
 }
 
