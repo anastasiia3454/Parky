@@ -267,7 +267,8 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
         const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 100 : 0.5;
 
-        setStartMarker(startCoords.lat, startCoords.lon);
+        // Start- und Ziel-Marker inklusive übergebener Adresse setzen
+        setStartMarker(startCoords.lat, startCoords.lon, startCoords.displayName);
         setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 
         const parkings = await fetchParkAndRide(
