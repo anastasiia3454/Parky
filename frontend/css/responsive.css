@@ -219,6 +219,11 @@
     .leaflet-bottom {
         margin-bottom: var(--peek);
     }
+    .welcome-content {
+        max-width: 90%;
+        max-height: 70vh;
+        overflow-y: scroll;
+    }
 }
 
 @media (min-width: 768px) and (max-width: 1024px) {
