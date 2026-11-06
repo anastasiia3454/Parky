@@ -226,15 +226,15 @@ namespace Backend.Services
             string fee = TagValue(tags, "fee");
             string charge = TagValue(tags, "charge");
 
-            if (fee == "no")
-            {
-                candidate.FeeStatus = "free";
-                candidate.FeeDescription = "kostenlos";
-            }
-            else if (fee == "yes" || charge != "")
+            if (charge != "" || fee == "yes")
             {
                 candidate.FeeStatus = "paid";
                 candidate.FeeDescription = charge != "" ? charge : "gebührenpflichtig";
+            }
+            else if (fee == "no")
+            {
+                candidate.FeeStatus = "free";
+                candidate.FeeDescription = "kostenlos";
             }
 
             candidate.OpeningHours = NullIfEmpty(TagValue(tags, "opening_hours"));
