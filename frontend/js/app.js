@@ -655,6 +655,7 @@ function renderCostPanel(routes) {
     panel.innerHTML = `
         <div class="routes__head">
             <h3 class="routes__title">Parkgebühren</h3>
+            <span class="routes__sub">Schätzung</span>
         </div>
         ${cheapest}
         <ul class="cost-list">${items}</ul>
@@ -673,4 +674,31 @@ document.querySelectorAll('.sheet-tab').forEach(tab => {
         document.getElementById('results').hidden = target !== 'routes';
         document.getElementById('costPanel').hidden = target !== 'costs';
     });
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+    const form = document.getElementById('routeForm');
+    form.reset();
+    document.getElementById('weightSpeed').dispatchEvent(new Event('input'));
+
+    clearMapResults();
+
+    const results = document.getElementById('results');
+    results.innerHTML = `
+        <div class="empty-state">
+            <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
+        </div>`;
+    results.hidden = false;
+
+    const costPanel = document.getElementById('costPanel');
+    costPanel.innerHTML = '';
+    costPanel.hidden = true;
+
+    document.querySelectorAll('.sheet-tab').forEach(t => {
+        const active = t.dataset.tab === 'routes';
+        t.classList.toggle('is-active', active);
+        t.setAttribute('aria-selected', String(active));
+    });
+
+    document.getElementById('start').focus();
 });
