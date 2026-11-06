@@ -110,7 +110,9 @@ namespace Backend.Controllers
                 WalkingMinutes = walkingMinutes,
                 PolylineDrive = "",
                 PolylineTransit = connection.Polyline,
-                Legs = connection.Legs
+                Legs = connection.Legs,
+                FeeStatus = parking.FeeStatus,
+                FeeDescription = parking.FeeDescription
             };
         }
 

@@ -1,3 +1,9 @@
+/* ==========================================================================
+   Parky – components.css
+   Einbinden NACH styles.css und responsive.css.
+   Enthält: Toast-Meldungen (oben rechts) und Routen-Karten.
+   ========================================================================== */
+
 :root {
     --route-drive: #00bfff;    /* identisch mit der Linienfarbe auf der Karte */
     --route-park: #9ca3af;
@@ -6,7 +12,9 @@
     --ui-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-
+/* ==========================================================================
+   Toast-Meldungen
+   ========================================================================== */
 .toast-region {
     position: fixed;
     top: calc(16px + env(safe-area-inset-top, 0px));
@@ -35,6 +43,7 @@
     cursor: pointer;
     box-shadow: 0 10px 25px -8px rgba(17, 24, 39, 0.25);
 
+    /* Ausgangszustand = Zustand beim Verschwinden */
     opacity: 0;
     transform: translate3d(28px, 0, 0);
     transition: opacity 0.3s ease, transform 0.45s var(--ui-ease);
@@ -109,6 +118,9 @@
     }
 }
 
+/* ==========================================================================
+   Gesamtrouten
+   ========================================================================== */
 .routes {
     display: flex;
     flex-direction: column;
@@ -163,6 +175,7 @@
     box-shadow: 0 0 0 3px rgba(255, 117, 31, 0.15);
 }
 
+/* Kopfzeile: Option links, Gesamtzeit rechts in Orange */
 .route-card__head {
     display: flex;
     align-items: flex-start;
@@ -203,6 +216,7 @@
     color: var(--text-muted);
 }
 
+/* Stern für die schnellste Route */
 .route-card__badge {
     align-self: flex-start;
     display: inline-flex;
@@ -225,6 +239,7 @@
     stroke-linejoin: round;
 }
 
+/* Zeitbalken: Länge der Abschnitte entspricht ihrer Dauer */
 .route-card__bar {
     display: flex;
     gap: 3px;
@@ -242,6 +257,7 @@
 .route-card__seg--transit { background: var(--route-transit); }
 .route-card__seg--walk    { background: var(--route-walk); }
 
+/* Legende mit den einzelnen Zeiten */
 .route-card__legend {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -271,6 +287,7 @@
     border-radius: 50%;
 }
 
+/* Orange „Auswählen"-Button */
 .route-card__btn {
     width: 100%;
     padding: 11px 14px;
@@ -313,6 +330,10 @@
     }
 }
 
+/* ==========================================================================
+   Kartenstil-Umschalter (unten links auf der Karte)
+   Überall nebeneinander (Vorschau mit Name darunter)
+   ========================================================================== */
 .leaflet-control.map-style-switch {
     float: none;
     display: flex;
@@ -387,6 +408,9 @@
     transform: scale(0.96);
 }
 
+/* Tablet/Smartphone: Sheet liegt unten – Umschalter darüber anheben.
+   Die Bedienelemente unten liegen unter dem Sheet (z-index 900 < 1000),
+   damit das Sheet immer alle Berührungen bekommt und sich verschieben lässt. */
 @media (max-width: 1024px) {
     .leaflet-bottom {
         z-index: 900;
@@ -398,6 +422,8 @@
     }
 }
 
+/* Smartphone: nur eine kleine Schaltfläche mit dem aktiven Kartenstil.
+   Ein Tipp wechselt auf den anderen Stil (Logik in map.js). */
 @media (max-width: 768px) {
     .leaflet-bottom .leaflet-control.map-style-switch {
         padding: 3px;
@@ -413,12 +439,16 @@
     }
 }
 
+/* Sehr hohe Bildschirme (Desktop): Umschalter etwas weiter unten */
 @media (min-width: 1025px) and (max-height: 700px) {
     .leaflet-bottom .leaflet-control.map-style-switch {
         margin-bottom: 14px;
     }
 }
 
+/* ==========================================================================
+   Routendetails – öffnen sich unter der gewählten Option
+   ========================================================================== */
 .route-detail {
     margin: -4px 0 14px;
     padding: 16px 16px 6px;
@@ -479,6 +509,7 @@
     padding-bottom: 16px;
 }
 
+/* Vertikale Linie zwischen den Abschnitten */
 .route-detail__step:not(:last-child)::before {
     content: '';
     position: absolute;
@@ -578,6 +609,9 @@
 .route-detail__step--walk  { --rail: var(--route-walk); }
 .route-detail__step--transit { --rail: var(--route-transit); }
 
+/* ==========================================================================
+   Start- und Endpunkt auf der Karte (Apple-Stil, leichtes Pendeln wie im Wind)
+   ========================================================================== */
 .leaflet-marker-icon.parky-marker {
     background: none;
     border: none;
@@ -589,6 +623,7 @@
     animation: parky-sway 2.6s ease-in-out infinite alternate;
 }
 
+/* Startpunkt: blauer Punkt mit weißem Rand */
 .parky-marker__dot {
     display: block;
     width: 22px;
@@ -600,6 +635,7 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
+/* Endpunkt: Pin, Drehpunkt liegt an der Spitze */
 .parky-marker--end .parky-marker__sway {
     transform-origin: 50% 100%;
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
@@ -609,6 +645,7 @@
     display: block;
 }
 
+/* Nur drehen, um die Spitze (Drehpunkt liegt an der Spitze) – die Spitze bleibt am Ziel */
 @keyframes parky-sway {
     from { transform: rotate(-4deg); }
     to   { transform: rotate(4deg); }
@@ -622,4 +659,119 @@
     .parky-marker__sway {
         animation: none;
     }
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.sheet-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 14px;
+    background: #f3f4f6;
+    border-radius: 12px;
+}
+
+.sheet-tab {
+    padding: 10px 8px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sheet-tab.is-active {
+    background: var(--surface);
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+}
+
+.sheet-tab:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.cost-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.cost-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: var(--text-main);
+}
+
+.cost-summary b {
+    font-size: 1.15rem;
+    color: var(--primary);
+}
+
+.cost-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cost-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.cost-item__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.cost-item__info b {
+    color: var(--text-main);
+}
+
+.cost-item__info span {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cost-item__info small {
+    color: var(--text-muted);
+    font-size: 0.74rem;
+}
+
+.cost-item__amount {
+    font-weight: 800;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.cost-note {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    line-height: 1.4;
 }

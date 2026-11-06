@@ -1,5 +1,3 @@
-let currentSearchAbortController = null;
-
 const closeWindow = document.getElementById("closeModal");
 const welcomeModal = document.querySelector(".welcome-window");
 
@@ -17,49 +15,10 @@ if (closeWindow && welcomeModal) {
     });
 }
 
-function resetSearch() {
-    if (currentSearchAbortController) {
-        currentSearchAbortController.abort();
-        currentSearchAbortController = null;
-    }
-
-    const startInput = document.getElementById('start');
-    const destInput = document.getElementById('destination');
-    if (startInput) startInput.value = '';
-    if (destInput) destInput.value = '';
-
-    const resultsDiv = document.getElementById('results');
-    if (resultsDiv) {
-        resultsDiv.innerHTML = `
-            <div class="empty-state">
-                <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
-            </div>
-        `;
-    }
-
-    if (typeof clearMapResults === 'function') {
-        clearMapResults();
-    }
-
-    const submitBtn = document.getElementById('btnSearch');
-    if (submitBtn) submitBtn.classList.remove('loading');
-
-    showToast('Suche zurückgesetzt', { type: 'info', duration: 2500 });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    renderRecentSearches();
-    const btnReset = document.getElementById('btnReset');
-    if (btnReset) {
-        btnReset.addEventListener('click', resetSearch);
-    }
-});
-
-async function geocodeAddress(address, signal) {
+async function geocodeAddress(address) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
 
     const response = await fetch(url, {
-        signal,
         headers: {
             'User-Agent': 'ParkAndRideApp/1.0'
         }
@@ -158,25 +117,15 @@ function showToast(message, options = {}) {
     return { el, update, close };
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
 function saveRecentSearch(start, destination) {
     if (!start || !destination) return;
     let history = JSON.parse(localStorage.getItem('parky_recent_searches')) || [];
-
+    
     history = history.filter(item => !(item.start === start && item.destination === destination));
     history.unshift({ start, destination });
-
+    
     if (history.length > 5) history.pop();
-
+    
     localStorage.setItem('parky_recent_searches', JSON.stringify(history));
     renderRecentSearches();
 }
@@ -214,49 +163,45 @@ function renderRecentSearches() {
         btn.addEventListener('click', (e) => {
             const index = e.currentTarget.dataset.index;
             const selected = history[index];
-
+            
             const startInput = document.getElementById('start');
             const destInput = document.getElementById('destination');
-
+            
             if (startInput) startInput.value = selected.start;
             if (destInput) destInput.value = selected.destination;
-
+            
             const routeForm = document.getElementById('routeForm');
             if (routeForm) routeForm.requestSubmit();
         });
     });
 }
 
+document.addEventListener('DOMContentLoaded', renderRecentSearches);
+
 const AUTO_SELECT_BEST_ROUTE = true;
 
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (currentSearchAbortController) {
-        currentSearchAbortController.abort();
-    }
-    currentSearchAbortController = new AbortController();
-    const signal = currentSearchAbortController.signal;
-
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
-
+    
     const startText = document.getElementById('start').value;
     const destText = document.getElementById('destination').value;
 
     saveRecentSearch(startText, destText);
 
     resultsDiv.innerHTML = '';
-    if (typeof clearMapResults === 'function') {
-        clearMapResults();
-    }
+    const costPanelReset = document.getElementById('costPanel');
+    if (costPanelReset) costPanelReset.innerHTML = '';
+    clearMapResults();
     if (submitBtn) submitBtn.classList.add('loading');
 
     const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
 
     try {
-        const startCoords = await geocodeAddress(startText, signal);
-        const destCoords = await geocodeAddress(destText, signal);
+        const startCoords = await geocodeAddress(startText);
+        const destCoords = await geocodeAddress(destText);
 
         resultsDiv.innerHTML = `
             <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
@@ -268,20 +213,15 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
         const sliderValue = sliderElement ? parseFloat(sliderElement.value) / 100 : 0.5;
 
-        if (typeof setStartMarker === 'function') {
-            setStartMarker(startCoords.lat, startCoords.lon);
-        }
-        if (typeof setDestinationMarker === 'function') {
-            setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
-        }
+        setStartMarker(startCoords.lat, startCoords.lon);
+        setDestinationMarker(destCoords.lat, destCoords.lon, destCoords.displayName);
 
         const parkings = await fetchParkAndRide(
             startCoords.lat,
             startCoords.lon,
             destCoords.lat,
             destCoords.lon,
-            sliderValue,
-            signal
+            sliderValue
         );
 
         if (parkings && parkings.length > 0) {
@@ -298,15 +238,12 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
         const routeStatus = showToast('Berechne Gesamtrouten …', { type: 'info', loading: true });
         try {
-            await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon, signal);
+            await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
         } finally {
             routeStatus.close();
         }
 
     } catch (error) {
-        if (error.name === 'AbortError') {
-            return;
-        }
         console.error(error);
         const message = error && error.message && error.message.startsWith('Adresse nicht gefunden')
             ? error.message
@@ -317,22 +254,28 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     }
 });
 
-async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5, signal) {
+async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5) {
     try {
         let url = `https://parky-luln.onrender.com/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
         if (destLat && destLon) {
             url += `&destLat=${destLat}&destLon=${destLon}`;
         }
 
-        const response = await fetch(url, { signal });
+        const response = await fetch(url);
         if (!response.ok) {
             const body = await response.json().catch(() => null);
             throw new Error(body?.message || `Fehler beim Laden: ${response.statusText}`);
         }
 
         const data = await response.json();
+        console.log("Gefundene P+R Daten:", data);
+
         const parkings = data.parkings || [];
         const directCarRoute = data.directCarRoute;
+
+        if (directCarRoute) {
+            console.log(`Direkte Autofahrt: ca. ${Math.round(directCarRoute.durationSeconds / 60)} Min.`);
+        }
 
         if (typeof displayParkingsOnMap === "function") {
             displayParkingsOnMap(parkings, lat, lon);
@@ -340,7 +283,6 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
 
         return parkings;
     } catch (error) {
-        if (error.name === 'AbortError') throw error;
         console.error("API-Fehler:", error);
         showToast(error.message, { type: 'error', duration: 6000 });
         return [];
@@ -406,11 +348,13 @@ function buildRouteCard(route, index, isBest) {
     return card;
 }
 
-async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon, signal) {
+async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000);
         const response = await fetch('https://parky-luln.onrender.com/api/Route/calculate', {
+            signal: controller.signal,
             method: 'POST',
-            signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 originLat: originLat,
@@ -420,6 +364,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 departureTime: new Date().toISOString()
             })
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             console.error("Fehler bei der Anfrage an den RouteController");
@@ -463,9 +408,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             });
 
             showRouteDetail(route, card, userAction);
-            if (typeof showOnlyParking === 'function') {
-                showOnlyParking(route.parkingLat, route.parkingLon);
-            }
+            showOnlyParking(route.parkingLat, route.parkingLon);
 
             if (typeof drawFullIntermodalRoute === 'function') {
                 drawFullIntermodalRoute(
@@ -492,12 +435,12 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         });
 
         resultsDiv.appendChild(container);
+        renderCostPanel(routes);
 
         if (AUTO_SELECT_BEST_ROUTE) {
             selectRoute(routes[bestIndex], cards[bestIndex], false);
         }
     } catch (err) {
-        if (err.name === 'AbortError') throw err;
         console.error("Fehler bei der intermodalen Routenberechnung:", err);
         showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
     }
@@ -654,3 +597,81 @@ function showRouteDetail(route, card, userAction = true) {
         detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
+
+function parseHourlyRate(text) {
+    if (!text) return null;
+    const m = String(text).replace(',', '.').match(/(\d+(?:\.\d+)?)\s*(?:€|EUR)?\s*\/\s*(?:h|Std|std|hour)/i);
+    return m ? parseFloat(m[1]) : null;
+}
+
+function estimateParkingCost(route) {
+    if (route.feeStatus === 'free') return 0;
+    const rate = parseHourlyRate(route.feeDescription);
+    if (rate === null) return null;
+    const hours = Math.max(1, Math.ceil(Number(route.totalMinutes) / 60));
+    return rate * hours;
+}
+
+function formatEuro(value) {
+    return value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+}
+
+function renderCostPanel(routes) {
+    const panel = document.getElementById('costPanel');
+    if (!panel || !routes || routes.length === 0) return;
+
+    const items = routes.map((route, idx) => {
+        const cost = estimateParkingCost(route);
+        let amount;
+        if (route.feeStatus === 'free') {
+            amount = 'kostenlos';
+        } else if (cost !== null) {
+            amount = formatEuro(cost);
+        } else {
+            amount = route.feeDescription ? escapeHtml(route.feeDescription) : 'unbekannt';
+        }
+        const note = route.feeStatus === 'paid' && cost !== null
+            ? `Schätzung bei ${Math.round(Number(route.totalMinutes))} Min. Gesamtzeit`
+            : '';
+
+        return `
+            <li class="cost-item">
+                <div class="cost-item__info">
+                    <b>Option ${idx + 1}</b>
+                    <span>${escapeHtml(route.parkingName)}</span>
+                    ${note ? `<small>${note}</small>` : ''}
+                </div>
+                <div class="cost-item__amount">${amount}</div>
+            </li>`;
+    }).join('');
+
+    const withCost = routes
+        .map(r => estimateParkingCost(r))
+        .filter(v => v !== null);
+    const cheapest = withCost.length > 0
+        ? `<div class="cost-summary"><span>Günstigste Option</span><b>${formatEuro(Math.min(...withCost))}</b></div>`
+        : '';
+
+    panel.innerHTML = `
+        <div class="routes__head">
+            <h3 class="routes__title">Parkgebühren</h3>
+            <span class="routes__sub">Schätzung</span>
+        </div>
+        ${cheapest}
+        <ul class="cost-list">${items}</ul>
+        <p class="cost-note">Die tatsächliche Gebühr hängt von der echten Parkdauer und den Tarifen des Betreibers ab.</p>
+    `;
+}
+
+document.querySelectorAll('.sheet-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.sheet-tab').forEach(t => {
+            const active = t === tab;
+            t.classList.toggle('is-active', active);
+            t.setAttribute('aria-selected', String(active));
+        });
+        document.getElementById('results').hidden = target !== 'routes';
+        document.getElementById('costPanel').hidden = target !== 'costs';
+    });
+});

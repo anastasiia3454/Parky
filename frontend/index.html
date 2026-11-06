@@ -21,7 +21,7 @@
         <div class="welcome-content"
             style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: inherit;">
 
-            <h2 style="margin-top: 0; color: #111827;">Willkommen bei Parky!</h2>
+            <h2 style="margin-top: 0; color: #111827;">🚗 Willkommen bei Parky!</h2>
 
             <p style="color: #4b5563; font-size: 14px; line-height: 1.5;">
                 Deine intelligente App für die optimale Kombination aus Auto und öffentlichem Nahverkehr (Park & Ride).
@@ -29,7 +29,7 @@
 
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
 
-            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">Wichtiger Hinweis & Haftungsausschluss
+            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">⚠️ Wichtiger Hinweis & Haftungsausschluss
             </h3>
             <p style="color: #6b7280; font-size: 13px; line-height: 1.4; margin-bottom: 15px;">
                 Dieses Projekt ist ein nicht-kommerzielles Lernprojekt. Die bereitgestellten Routen und Parkplatzdaten
@@ -38,7 +38,7 @@
                 prüfen. Die Nutzung erfolgt auf eigene Gefahr; es wird keinerlei Haftung übernommen.
             </p>
 
-            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">Datenquellen & Lizenzen</h3>
+            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">🗺️ Datenquellen & Lizenzen</h3>
             <p style="color: #6b7280; font-size: 13px; line-height: 1.5; margin-bottom: 10px;">
                 Parky ist ein nicht-kommerzielles Lernprojekt. Die App nutzt folgende Dienste:
             </p>
@@ -46,7 +46,7 @@
                 <li>Kartendaten und Adresssuche: © <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #2563eb;">OpenStreetMap-Mitwirkende</a> (Open Database License), Kacheln über OpenStreetMap bzw. OpenStreetMap France</li>
                 <li>Parkplätze: Overpass API (OpenStreetMap-Daten)</li>
                 <li>Fahrzeiten mit dem Auto und Fußweg: <a href="https://project-osrm.org" target="_blank" style="color: #2563eb;">OSRM</a></li>
-                <li>ÖPNV-Verbindungen und Haltestellen: VBB über <a href="https://transport.rest" target="_blank" style="color: #2563eb;">transport.rest</a>. Die Daten stammen aus der Schnittstelle des Verkehrsverbunds Berlin-Brandenburg (VBB).</li>
+                <li>ÖPNV-Verbindungen und Haltestellen: VBB über <a href="https://transport.rest" target="_blank" style="color: #2563eb;">transport.rest</a>. Die Daten stammen aus der Schnittstelle des Verkehrsverbunds Berlin-Brandenburg (VBB). Eine offizielle Nutzungsfreigabe liegt für dieses Projekt nicht vor.</li>
                 <li>Kartenbibliothek: <a href="https://leafletjs.com" target="_blank" style="color: #2563eb;">Leaflet</a></li>
             </ul>
             <p style="color: #6b7280; font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
@@ -120,11 +120,16 @@
                 </form>
 
                 <div class="divider"></div>
+                <div class="sheet-tabs" role="tablist">
+                    <button type="button" class="sheet-tab is-active" data-tab="routes" role="tab" aria-selected="true">Routen</button>
+                    <button type="button" class="sheet-tab" data-tab="costs" role="tab" aria-selected="false">Parkgebühren</button>
+                </div>
                 <div id="results" class="results-container">
                     <div class="empty-state">
                         <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
                     </div>
                 </div>
+                <div id="costPanel" class="cost-panel" hidden></div>
             </div>
         </aside>
         <main id="map"></main>
