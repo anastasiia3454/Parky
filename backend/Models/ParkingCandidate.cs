@@ -26,6 +26,16 @@ public class ParkingCandidate
     /// <summary>Bewertung für die Sortierung (kleiner ist besser)</summary>
     public double Score { get; set; }
 
+    public string FeeStatus { get; set; } = "unknown";
+
+    public string? FeeDescription { get; set; }
+
+    public string? OpeningHours { get; set; }
+
+    public string? Capacity { get; set; }
+
+    public string? Operator { get; set; }
+
     public ParkingCandidate(string name, double lat, double lon, double driveDurationSeconds, double driveDistanceMeters)
     {
         Name = name;

@@ -32,6 +32,7 @@ namespace Backend.Services
             "https://lz4.overpass-api.de/api/interpreter",
             "https://z.overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
             "https://overpass.private.coffee/api/interpreter"
         };
 
@@ -197,14 +198,22 @@ namespace Backend.Services
                 }
 
                 string name = "P+R Parkplatz";
-                if (element.TryGetProperty("tags", out var tags) && tags.TryGetProperty("name", out var nameProp))
+                JsonElement tags = default;
+                bool hasTags = element.TryGetProperty("tags", out tags);
+
+                if (hasTags && tags.TryGetProperty("name", out var nameProp))
                 {
                     name = nameProp.GetString() ?? name;
                 }
 
                 if (pLat != 0 && pLon != 0)
                 {
-                    result.Add(new ParkingCandidate(name, pLat, pLon, 0, 0));
+                    var candidate = new ParkingCandidate(name, pLat, pLon, 0, 0);
+                    if (hasTags)
+                    {
+                        ApplyTags(candidate, tags);
+                    }
+                    result.Add(candidate);
                 }
             }
 
@@ -212,6 +221,39 @@ namespace Backend.Services
         }
 
         // Fahrzeiten aller Parkplätze in einer einzigen OSRM-Anfrage holen
+        private static void ApplyTags(ParkingCandidate candidate, JsonElement tags)
+        {
+            string fee = TagValue(tags, "fee");
+            string charge = TagValue(tags, "charge");
+
+            if (fee == "no")
+            {
+                candidate.FeeStatus = "free";
+                candidate.FeeDescription = "kostenlos";
+            }
+            else if (fee == "yes" || charge != "")
+            {
+                candidate.FeeStatus = "paid";
+                candidate.FeeDescription = charge != "" ? charge : "gebührenpflichtig";
+            }
+
+            candidate.OpeningHours = NullIfEmpty(TagValue(tags, "opening_hours"));
+            candidate.Capacity = NullIfEmpty(TagValue(tags, "capacity"));
+            candidate.Operator = NullIfEmpty(TagValue(tags, "operator"));
+        }
+
+        private static string TagValue(JsonElement tags, string key)
+        {
+            return tags.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString() ?? ""
+                : "";
+        }
+
+        private static string? NullIfEmpty(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
         private static async Task LoadDriveDurationsAsync(HttpClient client, double lat, double lon, List<ParkingCandidate> candidates)
         {
             string coordinates = $"{lon.ToString(CultureInfo.InvariantCulture)},{lat.ToString(CultureInfo.InvariantCulture)}";
