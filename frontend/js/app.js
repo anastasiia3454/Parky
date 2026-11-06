@@ -655,7 +655,6 @@ function renderCostPanel(routes) {
     panel.innerHTML = `
         <div class="routes__head">
             <h3 class="routes__title">Parkgebühren</h3>
-            <span class="routes__sub">Schätzung</span>
         </div>
         ${cheapest}
         <ul class="cost-list">${items}</ul>
