@@ -8,7 +8,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVercel", policy =>
     {
-        policy.WithOrigins("https://parky-frontend.vercel.app") // Deine Vercel URL
+        policy.WithOrigins(
+                "http://127.0.0.1:5500",
+                "http://localhost:5500",
+                "https://parky-frontend.vercel.app"
+            )
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
