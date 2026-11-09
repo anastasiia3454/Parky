@@ -227,15 +227,12 @@ function destinationMarkerIcon() {
     });
 }
 
-
 function setStartMarker(lat, lon, name = 'Dein Startpunkt') {
     if (!isValidCoord(lat) || !isValidCoord(lon)) return;
 
     if (startMarker) {
         map.removeLayer(startMarker);
     }
-
-    const radius = 9;
 
     startMarker = L.marker([lat, lon], {
         icon: startMarkerIcon(),
@@ -251,8 +248,6 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
     if (destinationMarker) {
         map.removeLayer(destinationMarker);
     }
-
-    const radius = 9;
 
     destinationMarker = L.marker([lat, lon], {
         icon: destinationMarkerIcon(),
@@ -361,7 +356,7 @@ async function drawFullIntermodalRoute(
         if (driveData.routes && driveData.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
                 style: {
-                    color: '#00bfff', // Hellblau
+                    color: '#00bfff',
                     weight: 5,
                     opacity: 0.9
                 }
@@ -374,7 +369,7 @@ async function drawFullIntermodalRoute(
     if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
-                color: '#8b5cf6', // Lila
+                color: '#8b5cf6',
                 weight: 5,
                 opacity: 0.85
             }).addTo(map);
@@ -421,4 +416,39 @@ async function drawFullIntermodalRoute(
     if (currentWalkRouteLayer) activeLayers.push(currentWalkRouteLayer);
 
     fitToLayers(activeLayers, 0.1);
+}
+
+async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
+    if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
+    if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
+    if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
+
+    currentDriveRouteLayer = null;
+    currentTransitRouteLayer = null;
+    currentWalkRouteLayer = null;
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${destLon},${destLat}?overview=full&geometries=geojson`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.routes && data.routes.length > 0) {
+            currentDriveRouteLayer = L.geoJSON(data.routes[0].geometry, {
+                style: {
+                    color: '#2563eb',
+                    weight: 6,
+                    opacity: 0.9
+                }
+            }).addTo(map);
+
+            const activeLayers = [currentDriveRouteLayer];
+            if (startMarker) activeLayers.push(startMarker);
+            if (destinationMarker) activeLayers.push(destinationMarker);
+
+            fitToLayers(activeLayers, 0.1);
+        }
+    } catch (err) {
+        console.error("Fehler beim Laden der direkten Auto-Route:", err);
+    }
 }
