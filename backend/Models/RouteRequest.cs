@@ -1,33 +1,31 @@
 using System;
+using System.Collections.Generic;
 
 namespace Backend.Models;
-/// <summary>
-/// Stellt die Suchanfrage dar, die vom Frontend an das Backend gesendet wird
-/// </summary>
 
+/// <summary>
+/// Anfrage des Frontends für die Berechnung der Gesamtrouten
+/// </summary>
 public class RouteRequest
 {
-    /// <summary>
-    /// Breitgrad des Startpunkts
-    /// </summary>
+    /// <summary>Breitengrad des Startpunkts</summary>
     public double OriginLat { get; set; }
-    /// <summary>
-    /// Längegrad des Startpunkts
-    /// </summary>
+
+    /// <summary>Längengrad des Startpunkts</summary>
     public double OriginLon { get; set; }
 
-    /// <summary>
-    /// Breitgrad des Zielorts
-    /// </summary>
+    /// <summary>Breitengrad des Ziels</summary>
     public double TargetLat { get; set; }
 
-    /// <summary>
-    /// Längegrad des Tielorts
-    /// </summary>
+    /// <summary>Längengrad des Ziels</summary>
     public double TargetLon { get; set; }
 
-    /// <summary>
-    /// Geplante Abfahrtszeit für die Routberechnung
-    /// </summary>
+    /// <summary>Gewünschte Abfahrtszeit (ISO-Format)</summary>
     public DateTimeOffset DepartureTime { get; set; }
+
+    /// <summary>
+    /// Ausgewählte VBB-Verkehrsmittel, z. B. "subway", "bus", "regional".
+    /// Null oder leer bedeutet: alle Verkehrsmittel.
+    /// </summary>
+    public List<string>? Products { get; set; }
 }
