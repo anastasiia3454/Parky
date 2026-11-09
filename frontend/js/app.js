@@ -485,18 +485,32 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                         drawDirectCarRoute(originLat, originLon, targetLat, targetLon);
                     }
                 });
+                // Direktfahrt als erste Option ganz oben einfügen
                 container.prepend(directCard);
             }
 
+            // --- Intelligenter Auto-Sinn-Check ---
             const bestPAndRMinutes = Number(routes[bestIndex].totalMinutes);
-            const directMinutes = windowDirectCarRoute ? Math.round(windowDirectCarRoute.durationSeconds / 60) : 999;
 
-            const preferDirect = windowDirectCarRoute && (directMinutes <= bestPAndRMinutes || bestPAndRMinutes > directMinutes * 1.2);
+            let directMinutes = 9999;
+            if (windowDirectCarRoute) {
+                const rawSec = windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0;
+                directMinutes = Math.round(rawSec / 60);
+            }
+
+            console.log("=== PARKY ROUTEN-CHECK ===");
+            console.log("Direkt-Auto Minuten:", directMinutes);
+            console.log("Beste P+R Minuten:", bestPAndRMinutes);
+
+            // P+R macht keinen Sinn, wenn die Direktfahrt schneller ist, die Gesamtstrecke kurz (< 25 Min) oder P+R unnötig viel länger dauert
+            const preferDirect = windowDirectCarRoute && (directMinutes <= bestPAndRMinutes || directMinutes < 25 || bestPAndRMinutes > directMinutes * 1.2);
 
             if (AUTO_SELECT_BEST_ROUTE) {
                 if (preferDirect && directCard) {
+                    console.log("--> P+R macht keinen Sinn. Wähle automatisch die Direkte Autofahrt!");
                     directCard.click();
                 } else {
+                    console.log("--> P+R ist sinnvoll. Wähle P+R Route.");
                     selectRoute(routes[bestIndex], cards[bestIndex], false);
                 }
             }
