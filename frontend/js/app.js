@@ -485,8 +485,20 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             resultsDiv.appendChild(container);
             renderCostPanel(routes);
 
-            let directCard = null;
+            // --- Direkt-Auto Minuten berechnen ---
+            let directMinutes = 9999;
             if (windowDirectCarRoute) {
+                const rawSec = windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0;
+                directMinutes = Math.round(rawSec / 60);
+            }
+
+            console.log("=== PARKY ROUTEN-CHECK ===");
+            console.log("Direkt-Auto Minuten:", directMinutes);
+            console.log("Beste P+R Minuten:", Number(routes[bestIndex].totalMinutes));
+
+            let directCard = null;
+            // Regel: Direktfahrt nur anzeigen, WENN sie existiert UND maximal 15 Minuten dauert!
+            if (windowDirectCarRoute && directMinutes <= 15) {
                 directCard = buildDirectCarCard(windowDirectCarRoute);
                 directCard.addEventListener('click', () => {
                     cards.forEach(c => {
@@ -506,28 +518,16 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 container.prepend(directCard);
             }
 
-            // --- Intelligenter Auto-Sinn-Check ---
+            // --- Automatische Auswahl ---
             const bestPAndRMinutes = Number(routes[bestIndex].totalMinutes);
-            let directMinutes = 9999;
-
-            if (windowDirectCarRoute) {
-                const rawSec = windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0;
-                directMinutes = Math.round(rawSec / 60);
-            }
-
-            console.log("=== PARKY ROUTEN-CHECK ===");
-            console.log("Direkt-Auto Minuten:", directMinutes);
-            console.log("Beste P+R Minuten:", bestPAndRMinutes);
-
-            // Direktfahrt wählen, wenn sie schneller ist ODER die Gesamtstrecke kurz ist (< 25 Min)
-            const preferDirect = windowDirectCarRoute && (directMinutes <= bestPAndRMinutes || directMinutes < 25 || bestPAndRMinutes > directMinutes * 1.2);
+            const preferDirect = directCard && (directMinutes <= bestPAndRMinutes || bestPAndRMinutes > directMinutes * 1.2);
 
             if (AUTO_SELECT_BEST_ROUTE) {
                 if (preferDirect && directCard) {
-                    console.log("--> P+R macht keinen Sinn. Wähle automatisch die Direkte Autofahrt!");
+                    console.log("--> Kurze Autofahrt (<= 15 Min): Wähle automatisch die Direktfahrt!");
                     directCard.click();
                 } else {
-                    console.log("--> P+R ist sinnvoll. Wähle P+R Route.");
+                    console.log("--> Autofahrt > 15 Min oder P+R besser: Zeige und wähle P+R Routen.");
                     selectRoute(routes[bestIndex], cards[bestIndex], false);
                 }
             }
