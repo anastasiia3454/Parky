@@ -120,12 +120,12 @@ function showToast(message, options = {}) {
 function saveRecentSearch(start, destination) {
     if (!start || !destination) return;
     let history = JSON.parse(localStorage.getItem('parky_recent_searches')) || [];
-    
+
     history = history.filter(item => !(item.start === start && item.destination === destination));
     history.unshift({ start, destination });
-    
+
     if (history.length > 5) history.pop();
-    
+
     localStorage.setItem('parky_recent_searches', JSON.stringify(history));
     renderRecentSearches();
 }
@@ -163,13 +163,13 @@ function renderRecentSearches() {
         btn.addEventListener('click', (e) => {
             const index = e.currentTarget.dataset.index;
             const selected = history[index];
-            
+
             const startInput = document.getElementById('start');
             const destInput = document.getElementById('destination');
-            
+
             if (startInput) startInput.value = selected.start;
             if (destInput) destInput.value = selected.destination;
-            
+
             const routeForm = document.getElementById('routeForm');
             if (routeForm) routeForm.requestSubmit();
         });
@@ -186,7 +186,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 
     const submitBtn = document.getElementById('btnSearch');
     const resultsDiv = document.getElementById('results');
-    
+
     const startText = document.getElementById('start').value;
     const destText = document.getElementById('destination').value;
 
@@ -467,8 +467,9 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             resultsDiv.appendChild(container);
             renderCostPanel(routes);
 
+            let directCard = null;
             if (windowDirectCarRoute) {
-                const directCard = buildDirectCarCard(windowDirectCarRoute);
+                directCard = buildDirectCarCard(windowDirectCarRoute);
                 directCard.addEventListener('click', () => {
                     cards.forEach(c => {
                         c.classList.remove('is-selected');
@@ -487,8 +488,17 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 container.prepend(directCard);
             }
 
+            const bestPAndRMinutes = Number(routes[bestIndex].totalMinutes);
+            const directMinutes = windowDirectCarRoute ? Math.round(windowDirectCarRoute.durationSeconds / 60) : 999;
+
+            const preferDirect = windowDirectCarRoute && (directMinutes <= bestPAndRMinutes || bestPAndRMinutes > directMinutes * 1.2);
+
             if (AUTO_SELECT_BEST_ROUTE) {
-                selectRoute(routes[bestIndex], cards[bestIndex], false);
+                if (preferDirect && directCard) {
+                    directCard.click();
+                } else {
+                    selectRoute(routes[bestIndex], cards[bestIndex], false);
+                }
             }
         } else {
             showToast('Keine passenden ÖPNV-Routen für diese Parkplätze gefunden.', { type: 'warning', duration: 6000 });
