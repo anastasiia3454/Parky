@@ -816,3 +816,28 @@ if (btnDeutschlandticket) {
         });
     });
 }
+
+// --- Willkommensfenster / Nutzungsbedingungen Steuerung ---
+const acceptTermsCheckbox = document.getElementById("acceptTerms");
+const closeModalBtn = document.getElementById("closeModal");
+const toggleTermsBtn = document.getElementById("toggleTermsBtn");
+const termsInfoBox = document.getElementById("termsInfoBox");
+
+if (acceptTermsCheckbox && closeModalBtn) {
+    acceptTermsCheckbox.addEventListener("change", () => {
+        closeModalBtn.disabled = !acceptTermsCheckbox.checked;
+    });
+}
+
+if (toggleTermsBtn && termsInfoBox) {
+    toggleTermsBtn.addEventListener("click", () => {
+        const isHidden = termsInfoBox.hasAttribute("hidden");
+        if (isHidden) {
+            termsInfoBox.removeAttribute("hidden");
+            toggleTermsBtn.textContent = "Nutzungsbedingungen ausblenden";
+        } else {
+            termsInfoBox.setAttribute("hidden", "");
+            toggleTermsBtn.textContent = "Nutzungsbedingungen";
+        }
+    });
+}

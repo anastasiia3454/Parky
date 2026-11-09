@@ -1,11 +1,17 @@
 const map = L.map('map').setView([52.5200, 13.4050], 11);
 
 const MAP_STYLE_STORAGE_KEY = 'parky.mapStyle';
-const DEFAULT_MAP_STYLE = 'hot';
+const DEFAULT_MAP_STYLE = 'dark';
 
 const OSM_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
 
 const MAP_STYLES = {
+    dark: {
+        label: 'Dunkel',
+        url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        maxZoom: 19,
+        attribution: OSM_ATTRIBUTION + ' © CARTO'
+    },
     hot: {
         label: 'Standard',
         url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
@@ -47,11 +53,14 @@ function saveMapStyle(key) {
 
 function createBaseLayer(key) {
     const style = MAP_STYLES[key];
-    return L.tileLayer(style.url, {
-        subdomains: style.subdomains,
+    const options = {
         maxZoom: style.maxZoom,
         attribution: style.attribution
-    });
+    };
+    if (style.subdomains) {
+        options.subdomains = style.subdomains;
+    }
+    return L.tileLayer(style.url, options);
 }
 
 function setMapStyle(key, persist = true) {
@@ -80,7 +89,7 @@ function lonLatToTile(lat, lon, zoom) {
 
 function previewTileUrl(key, z, x, y) {
     const style = MAP_STYLES[key];
-    const sub = style.subdomains.charAt(0);
+    const sub = style.subdomains ? style.subdomains.charAt(0) : 'a';
     return style.url
         .replace('{s}', sub)
         .replace('{z}', z)

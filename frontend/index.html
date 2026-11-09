@@ -18,46 +18,42 @@
 
 <body>
     <div class="welcome-window" id="welcomeModal">
-        <div class="welcome-content"
-            style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: inherit;">
+        <div class="welcome-content">
+            <div class="welcome-logo-container">
+                <img src="./images/Parky.gif" alt="Parky Logo" class="welcome-logo">
+            </div>
+            <h2>Willkommen bei Parky!</h2>
 
-            <h2 style="margin-top: 0; color: #111827;">🚗 Willkommen bei Parky!</h2>
+            <div class="terms-container">
+                <label class="terms-label">
+                    <input type="checkbox" id="acceptTerms">
+                    <span>Ich akzeptiere die <button type="button" id="toggleTermsBtn" class="terms-link-btn">Nutzungsbedingungen</button></span>
+                </label>
+            </div>
 
-            <p style="color: #4b5563; font-size: 14px; line-height: 1.5;">
-                Deine intelligente App für die optimale Kombination aus Auto und öffentlichem Nahverkehr (Park & Ride).
-            </p>
+            <div id="termsInfoBox" class="terms-info-box" hidden>
+                <h3>⚠️ Wichtiger Hinweis & Haftungsausschluss</h3>
+                <p>
+                    Dieses Projekt ist ein nicht-kommerzielles Lernprojekt. Die bereitgestellten Routen und Parkplatzdaten
+                    basieren auf externen Diensten (OpenStreetMap, OSRM, VBB über transport.rest) und erheben keinen Anspruch
+                    auf Vollständigkeit, Aktualität oder Fehlerfreiheit. Abfahrtszeiten bitte immer im offiziellen Fahrplan
+                    prüfen. Die Nutzung erfolgt auf eigene Gefahr; es wird keinerlei Haftung übernommen.
+                </p>
 
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                <h3>🗺️ Datenquellen & Lizenzen</h3>
+                <p>Parky ist ein nicht-kommerzielles Lernprojekt. Die App nutzt folgende Dienste:</p>
+                <ul>
+                    <li>Kartendaten und Adresssuche: © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap-Mitwirkende</a> (Open Database License)</li>
+                    <li>Parkplätze: Overpass API (OpenStreetMap-Daten)</li>
+                    <li>Fahrzeiten mit dem Auto und Fußweg: <a href="https://project-osrm.org" target="_blank">OSRM</a></li>
+                    <li>ÖPNV-Verbindungen: VBB über <a href="https://transport.rest" target="_blank">transport.rest</a></li>
+                    <li>Kartenbibliothek: <a href="https://leafletjs.com" target="_blank">Leaflet</a></li>
+                </ul>
+            </div>
 
-            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">⚠️ Wichtiger Hinweis & Haftungsausschluss
-            </h3>
-            <p style="color: #6b7280; font-size: 13px; line-height: 1.4; margin-bottom: 15px;">
-                Dieses Projekt ist ein nicht-kommerzielles Lernprojekt. Die bereitgestellten Routen und Parkplatzdaten
-                basieren auf externen Diensten (OpenStreetMap, OSRM, VBB über transport.rest) und erheben keinen Anspruch
-                auf Vollständigkeit, Aktualität oder Fehlerfreiheit. Abfahrtszeiten bitte immer im offiziellen Fahrplan
-                prüfen. Die Nutzung erfolgt auf eigene Gefahr; es wird keinerlei Haftung übernommen.
-            </p>
-
-            <h3 style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">🗺️ Datenquellen & Lizenzen</h3>
-            <p style="color: #6b7280; font-size: 13px; line-height: 1.5; margin-bottom: 10px;">
-                Parky ist ein nicht-kommerzielles Lernprojekt. Die App nutzt folgende Dienste:
-            </p>
-            <ul style="color: #6b7280; font-size: 13px; line-height: 1.5; margin: 0 0 12px 18px;">
-                <li>Kartendaten und Adresssuche: © <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #2563eb;">OpenStreetMap-Mitwirkende</a> (Open Database License), Kacheln über OpenStreetMap bzw. OpenStreetMap France</li>
-                <li>Parkplätze: Overpass API (OpenStreetMap-Daten)</li>
-                <li>Fahrzeiten mit dem Auto und Fußweg: <a href="https://project-osrm.org" target="_blank" style="color: #2563eb;">OSRM</a></li>
-                <li>ÖPNV-Verbindungen und Haltestellen: VBB über <a href="https://transport.rest" target="_blank" style="color: #2563eb;">transport.rest</a>. Die Daten stammen aus der Schnittstelle des Verkehrsverbunds Berlin-Brandenburg (VBB). Eine offizielle Nutzungsfreigabe liegt für dieses Projekt nicht vor.</li>
-                <li>Kartenbibliothek: <a href="https://leafletjs.com" target="_blank" style="color: #2563eb;">Leaflet</a></li>
-            </ul>
-            <p style="color: #6b7280; font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
-                Die Routen und Parkplatzdaten erheben keinen Anspruch auf Vollständigkeit oder Aktualität. Abfahrtszeiten bitte immer im offiziellen Fahrplan prüfen.
-            </p>
-
-            <button id="closeModal"
-                style="width: 100%; padding: 12px; background: #111827; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px;">
-                Verstanden & App starten
+            <button id="closeModal" class="btn-welcome-start" disabled>
+                Los geht's!
             </button>
-
         </div>
     </div>
     <div id="layout">
