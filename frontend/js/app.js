@@ -492,7 +492,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             // --- Intelligenter Auto-Sinn-Check ---
             const bestPAndRMinutes = Number(routes[bestIndex].totalMinutes);
 
-            let directMinutes = 9999;
+            let directMinutes;
             if (windowDirectCarRoute) {
                 const rawSec = windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0;
                 directMinutes = Math.round(rawSec / 60);
