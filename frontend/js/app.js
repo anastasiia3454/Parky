@@ -153,7 +153,7 @@ function renderRecentSearches() {
         <div class="recent-chips">
             ${history.slice(0, 3).map((item, index) => `
                 <button type="button" class="recent-chip" data-index="${index}">
-                    📍 ${escapeHtml(item.start)} ➔${escapeHtml(item.destination)}
+                    📍 ${escapeHtml(item.start)} ➔ ${escapeHtml(item.destination)}
                 </button>
             `).join('')}
         </div>
@@ -269,13 +269,28 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
         }
 
         const data = await response.json();
-        console.log("Gefundene P+R Daten:", data);
-
         const parkings = data.parkings || [];
         windowDirectCarRoute = data.directCarRoute || null;
 
+        // Fallback: Falls Backend noch null liefert, Direktfahrt über Browser-OSRM abfragen
+        if (!windowDirectCarRoute && destLat && destLon) {
+            try {
+                const directRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${lon},${lat};${destLon},${destLat}?overview=false`);
+                const directData = await directRes.json();
+                if (directData.routes && directData.routes.length > 0) {
+                    windowDirectCarRoute = {
+                        durationSeconds: directData.routes[0].duration,
+                        distanceMeters: directData.routes[0].distance
+                    };
+                }
+            } catch (e) {
+                console.error("OSRM Fallback-Fehler:", e);
+            }
+        }
+
         if (windowDirectCarRoute) {
-            console.log(`Direkte Autofahrt: ca. ${Math.round(windowDirectCarRoute.durationSeconds / 60)} Min.`);
+            const sec = windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0;
+            console.log(`Direkte Autofahrt ermittelt: ca. ${Math.round(sec / 60)} Min.`);
         }
 
         if (typeof displayParkingsOnMap === "function") {
@@ -350,8 +365,11 @@ function buildRouteCard(route, index, isBest) {
 }
 
 function buildDirectCarCard(directCarRoute) {
-    const minutes = Math.round((directCarRoute.durationSeconds || directCarRoute.duration || 0) / 60);
-    const km = ((directCarRoute.distanceMeters || directCarRoute.distance || 0) / 1000).toFixed(1);
+    const sec = directCarRoute.durationSeconds || directCarRoute.duration || 0;
+    const dist = directCarRoute.distanceMeters || directCarRoute.distance || 0;
+
+    const minutes = Math.round(sec / 60);
+    const km = (dist / 1000).toFixed(1);
 
     const card = document.createElement('article');
     card.className = 'route-card route-card--direct-car';
@@ -485,16 +503,12 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                         drawDirectCarRoute(originLat, originLon, targetLat, targetLon);
                     }
                 });
-                // Direktfahrt als erste Option ganz oben einfügen
                 container.prepend(directCard);
             }
 
             // --- Intelligenter Auto-Sinn-Check ---
             const bestPAndRMinutes = Number(routes[bestIndex].totalMinutes);
-
             let directMinutes = 9999;
-
-            console.log("DEBUG windowDirectCarRoute:", windowDirectCarRoute);
 
             if (windowDirectCarRoute) {
                 const rawSec = windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0;
@@ -505,7 +519,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             console.log("Direkt-Auto Minuten:", directMinutes);
             console.log("Beste P+R Minuten:", bestPAndRMinutes);
 
-            // P+R macht keinen Sinn, wenn die Direktfahrt schneller ist, die Gesamtstrecke kurz (< 25 Min) oder P+R unnötig viel länger dauert
+            // Direktfahrt wählen, wenn sie schneller ist ODER die Gesamtstrecke kurz ist (< 25 Min)
             const preferDirect = windowDirectCarRoute && (directMinutes <= bestPAndRMinutes || directMinutes < 25 || bestPAndRMinutes > directMinutes * 1.2);
 
             if (AUTO_SELECT_BEST_ROUTE) {
