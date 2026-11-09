@@ -11,6 +11,7 @@ public class DirectCarRoute
     /// <summary>Strecke in Metern</summary>
     public double DistanceMeters { get; set; }
 
+    public DirectCarRoute() { }
     public DirectCarRoute(double durationSeconds, double distanceMeters)
     {
         DurationSeconds = durationSeconds;
