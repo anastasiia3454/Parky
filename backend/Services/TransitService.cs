@@ -127,15 +127,18 @@ namespace Backend.Services
                 string formattedDeparture = departureTime.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
 
                 // polylines=true: VBB liefert die Streckengeometrie jedes Legs mit
+                HashSet<string>? selectedProducts = null;
                 string productParams = "";
                 if (products != null && products.Any())
                 {
-                    var selected = new HashSet<string>(products, StringComparer.OrdinalIgnoreCase);
+                    selectedProducts = new HashSet<string>(products, StringComparer.OrdinalIgnoreCase);
                     productParams = string.Concat(AllProducts.Select(p =>
-                        $"&products[{p}]={(selected.Contains(p) ? "true" : "false")}"));
+                        $"&products[{p}]={(selectedProducts.Contains(p) ? "true" : "false")}"));
                 }
 
-                string url = $"https://v6.vbb.transport.rest/journeys?from={stopId}&to={targetStop.Id}&departure={formattedDeparture}&results=1&polylines=true{productParams}";
+                int resultCount = selectedProducts != null ? 6 : 1;
+                string url = $"https://v6.vbb.transport.rest/journeys?from={stopId}&to={targetStop.Id}&departure={formattedDeparture}&results={resultCount}&polylines=true{productParams}";
+                Console.WriteLine($"[DEBUG] Journey-Anfrage: {url}");
 
                 using var response = await _httpClient.GetAsync(url);
                 if (!response.IsSuccessStatusCode) return null;
@@ -152,7 +155,25 @@ namespace Backend.Services
                     return null;
                 }
 
-                var firstJourney = journeys[0];
+                JsonElement? chosenJourney = null;
+                foreach (var journey in journeys.EnumerateArray())
+                {
+                    if (journey.ValueKind != JsonValueKind.Object) continue;
+                    if (!journey.TryGetProperty("legs", out var journeyLegs) ||
+                        journeyLegs.ValueKind != JsonValueKind.Array ||
+                        journeyLegs.GetArrayLength() == 0)
+                    {
+                        continue;
+                    }
+                    if (selectedProducts == null || JourneyMatchesProducts(journeyLegs, selectedProducts))
+                    {
+                        chosenJourney = journey;
+                        break;
+                    }
+                }
+
+                if (chosenJourney == null) return null;
+                var firstJourney = chosenJourney.Value;
                 if (firstJourney.ValueKind != JsonValueKind.Object) return null;
 
                 if (!firstJourney.TryGetProperty("legs", out var legs) ||
@@ -276,6 +297,22 @@ namespace Backend.Services
         }
 
         // Sicherer Zugriff auf eine Objekt-Eigenschaft (wirft nie, auch wenn el kein Objekt ist)
+        private static bool JourneyMatchesProducts(JsonElement legs, HashSet<string> allowed)
+        {
+            foreach (var leg in legs.EnumerateArray())
+            {
+                if (leg.ValueKind != JsonValueKind.Object) continue;
+                if (leg.TryGetProperty("walking", out var walking) && walking.ValueKind == JsonValueKind.True) continue;
+
+                if (TryGetObject(leg, "line", out var line))
+                {
+                    string product = StringOf(line, "product");
+                    if (product != "" && !allowed.Contains(product)) return false;
+                }
+            }
+            return true;
+        }
+
         private static bool TryGetObject(JsonElement el, string name, out JsonElement value)
         {
             value = default;
