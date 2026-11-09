@@ -289,7 +289,6 @@ namespace Backend.Services
         }
 
         // ---------- Direkte Autofahrt ----------
-
         private async Task<DirectCarRoute?> GetDirectCarRouteAsync(double lat, double lon, double destLat, double destLon)
         {
             var client = _clientFactory.CreateClient();
@@ -297,9 +296,13 @@ namespace Backend.Services
                          $"{lon.ToString(CultureInfo.InvariantCulture)},{lat.ToString(CultureInfo.InvariantCulture)};" +
                          $"{destLon.ToString(CultureInfo.InvariantCulture)},{destLat.ToString(CultureInfo.InvariantCulture)}?overview=false";
 
+            Console.WriteLine($"[DEBUG] Rufe OSRM Direkt-Route auf: {url}");
+
             try
             {
                 var response = await client.GetAsync(url);
+                Console.WriteLine($"[DEBUG] OSRM Status Code: {response.StatusCode}");
+
                 if (!response.IsSuccessStatusCode) return null;
 
                 var json = await response.Content.ReadAsStringAsync();
@@ -310,12 +313,18 @@ namespace Backend.Services
                     var first = routes[0];
                     double duration = first.GetProperty("duration").GetDouble();
                     double distance = first.GetProperty("distance").GetDouble();
+
+                    Console.WriteLine($"[DEBUG] Erfolg! Dauer: {duration}s, Distanz: {distance}m");
                     return new DirectCarRoute(duration, distance);
+                }
+                else
+                {
+                    Console.WriteLine("[DEBUG] Keine 'routes' im OSRM-JSON gefunden!");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[FEHLER bei Direktroute]: {ex.Message}");
+                Console.WriteLine($"[FEHLER beim Abrufen der direkten Autofahrt]: {ex.Message}");
             }
 
             return null;
