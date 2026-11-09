@@ -313,9 +313,9 @@ namespace Backend.Services
                     return new DirectCarRoute(duration, distance);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Direkte Route ist optional
+                Console.WriteLine($"[FEHLER bei Direktroute]: {ex.Message}");
             }
 
             return null;
