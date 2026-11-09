@@ -151,7 +151,7 @@ function renderRecentSearches() {
     panel.innerHTML = `
         <h4>Neulich gesucht:</h4>
         <div class="recent-chips">
-            ${history.slice(0, 3).map((item, index) => `
+            ${history.map((item, index) => `
                 <button type="button" class="recent-chip" data-index="${index}">
                     📍 ${escapeHtml(item.start)} ➔ ${escapeHtml(item.destination)}
                 </button>
@@ -564,6 +564,9 @@ function buildRouteDetail(route, index, isBest) {
     }));
 
     const best = isBest ? `<span class="route-card__badge">Schnellste Route</span>` : '';
+    const filterNote = route.matchesProductFilter === false
+        ? `<span class="route-detail__sub">Keine Verbindung mit der gewählten Verkehrsart gefunden, gezeigt wird die schnellste.</span>`
+        : '';
 
     wrap.innerHTML = `
         <header class="route-detail__head">
@@ -571,6 +574,7 @@ function buildRouteDetail(route, index, isBest) {
                 <h4 class="route-detail__title">Option ${index + 1}: Routendetails</h4>
                 <span class="route-detail__sub">${escapeHtml(route.parkingName || 'P+R Parkplatz')}</span>
                 ${best}
+                ${filterNote}
             </div>
             <div class="route-detail__total">
                 ${formatDuration(route.totalMinutes)}

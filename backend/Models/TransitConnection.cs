@@ -2,41 +2,26 @@ using System.Collections.Generic;
 
 namespace Backend.Models;
 
-/// <summary>
-/// Repräsentiert eine konkrete ÖPNV Verbindung inklusive aller Teilstrecken
-/// und der finalen Ausstiegsposition
-/// </summary>
+// beschreibt die reine Fahrt mit Bus, S-Bahn oder U-Bahn 
+// von der Haltestelle (TransitStop) bis zum Ziel.
 public class TransitConnection
 {
 
-    /// <summary>
-    /// Gesamte Fahrzeit im öffentlichen Nahverkehr in Minuten
-    /// </summary>
+    // Fahrzeit im Öffentlichen Nachverkehr in Minuten
     public int DurationMinutes { get; set; }
 
-    /// <summary>
-    /// Name der ÖPNV Linie 
-    /// </summary>
+    // z.B U-bahn, S-bahn
     public string LineName { get; set; } = "";
 
-    /// <summary>
-    /// Kodierte Linie für die Karte
-    /// </summary>
+    // Linie auf der Karte
     public string Polyline { get; set; } = "";
 
-    /// <summary>
-    /// Breitengrad der finalen Aussstiegshaltestelle (Startpunkt für den Fußweg)
-    /// </summary>
-    public double ArrivalStopLat { get; set; }
 
-    /// <summary>
-    /// Längengrad der finalen Ausstiegshaltestelle
-    /// </summary>
+    public double ArrivalStopLat { get; set; }
     public double ArrivalStopLon { get; set; }
 
-
-    /// <summary>
-    /// Liste aller einzeln Teilstrecken (z. Erst Bus, dann U-Bahn)
-    /// </summary>
+    // Einzelne Abschnitte der Fahrt (Linie, Richtung, Ein- und Ausstieg) für die Routendetails
     public List<TransitLeg> Legs { get; set; } = new();
+
+    public bool MatchesProductFilter { get; set; } = true;
 }

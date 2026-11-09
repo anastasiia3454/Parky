@@ -112,7 +112,8 @@ namespace Backend.Controllers
                 PolylineTransit = connection.Polyline,
                 Legs = connection.Legs,
                 FeeStatus = parking.FeeStatus,
-                FeeDescription = parking.FeeDescription
+                FeeDescription = parking.FeeDescription,
+                MatchesProductFilter = connection.MatchesProductFilter
             };
         }
 

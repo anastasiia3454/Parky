@@ -156,6 +156,7 @@ namespace Backend.Services
                 }
 
                 JsonElement? chosenJourney = null;
+                bool matchesFilter = selectedProducts == null;
                 foreach (var journey in journeys.EnumerateArray())
                 {
                     if (journey.ValueKind != JsonValueKind.Object) continue;
@@ -168,7 +169,23 @@ namespace Backend.Services
                     if (selectedProducts == null || JourneyMatchesProducts(journeyLegs, selectedProducts))
                     {
                         chosenJourney = journey;
+                        matchesFilter = true;
                         break;
+                    }
+                }
+
+                if (chosenJourney == null)
+                {
+                    foreach (var journey in journeys.EnumerateArray())
+                    {
+                        if (journey.ValueKind == JsonValueKind.Object &&
+                            journey.TryGetProperty("legs", out var fallbackLegs) &&
+                            fallbackLegs.ValueKind == JsonValueKind.Array &&
+                            fallbackLegs.GetArrayLength() > 0)
+                        {
+                            chosenJourney = journey;
+                            break;
+                        }
                     }
                 }
 
@@ -234,7 +251,8 @@ namespace Backend.Services
                     Polyline = encodedPolyline,
                     ArrivalStopLat = targetStop.Lat,
                     ArrivalStopLon = targetStop.Lon,
-                    Legs = ParseLegs(legList)
+                    Legs = ParseLegs(legList),
+                    MatchesProductFilter = matchesFilter
                 };
             }
             catch (Exception ex)
