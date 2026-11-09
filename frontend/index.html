@@ -108,6 +108,21 @@
                         <input type="range" id="weightSpeed" min="1" max="5" value="3">
                     </div>
 
+                    <div class="input-group product-filter-group">
+                        <div class="slider-header">
+                            <label>Verkehrsmittel</label>
+                            <button type="button" id="btnDeutschlandticket" class="ticket-btn">Nur Deutschlandticket</button>
+                        </div>
+                        <div class="product-filter">
+                            <label class="product-chip"><input type="checkbox" value="subway" checked><span>U-Bahn</span></label>
+                            <label class="product-chip"><input type="checkbox" value="suburban" checked><span>S-Bahn</span></label>
+                            <label class="product-chip"><input type="checkbox" value="tram" checked><span>Tram</span></label>
+                            <label class="product-chip"><input type="checkbox" value="bus" checked><span>Bus</span></label>
+                            <label class="product-chip"><input type="checkbox" value="regional,regionalExpress" checked><span>Regional</span></label>
+                            <label class="product-chip"><input type="checkbox" value="nationalExpress,national" checked><span>Fernverkehr</span></label>
+                        </div>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" id="btnSearch" class="btn-submit">
                             <span>Parkplätze & Routen suchen</span>

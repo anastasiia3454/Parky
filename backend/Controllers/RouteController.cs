@@ -87,7 +87,7 @@ namespace Backend.Controllers
             var transitDeparture = request.DepartureTime.AddMinutes(driveMinutes + 5);
 
             var connection = await _transitService.GetConnectionAsync(
-                stop.Id, request.TargetLat, request.TargetLon, transitDeparture);
+                stop.Id, request.TargetLat, request.TargetLon, transitDeparture, request.Products);
             if (connection == null) return null;
 
             double walkDistanceKm = CalculateHaversineDistance(

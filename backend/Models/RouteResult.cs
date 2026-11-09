@@ -45,6 +45,8 @@ public class RouteResult
     /// <summary>Einzelne ÖPNV-Abschnitte für die Routendetails</summary>
     public List<TransitLeg> Legs { get; set; } = new();
 
+    public List<string>? Products { get; set; }
+
     /// <summary>Parkgebühr: free, paid oder unknown</summary>
     public string FeeStatus { get; set; } = "unknown";
 

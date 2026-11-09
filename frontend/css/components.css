@@ -775,3 +775,68 @@
     color: var(--text-muted);
     line-height: 1.4;
 }
+
+.product-filter-group .slider-header {
+    margin-bottom: 10px;
+}
+
+.ticket-btn {
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.ticket-btn:hover {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.product-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.product-chip {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.product-chip input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.product-chip span {
+    padding: 6px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.product-chip input:checked + span {
+    border-color: var(--primary);
+    background: #fff7ed;
+    color: var(--text-main);
+}
+
+.product-chip input:focus-visible + span {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}

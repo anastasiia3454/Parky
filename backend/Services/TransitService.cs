@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -10,9 +11,6 @@ using Backend.Models;
 
 namespace Backend.Services
 {
-    /// <summary>
-    /// Service zur Kommunikation mit der VBB API (Haltestellensuche, Verbindungen und Routen)
-    /// </summary>
     public class TransitService
     {
         private readonly HttpClient _httpClient;
@@ -21,10 +19,6 @@ namespace Backend.Services
         // nicht für jeden Parkplatz erneut abgefragt wird. Gilt für die Laufzeit des Servers.
         private static readonly ConcurrentDictionary<string, TransitStop> StopCache = new();
 
-        /// <summary>
-        /// Kostruktor für HttpClient und Logger
-        /// </summary>
-        /// <param name="httpClient"></param>
         public TransitService(HttpClient httpClient)
         {
             _httpClient = httpClient;
@@ -34,10 +28,7 @@ namespace Backend.Services
             }
         }
 
-        /// <summary>
-        /// Sucht NUR echte ÖPNV-Haltestellen (mit Cache für erfolgreiche Treffer)
-        /// </summary>
-
+        // Sucht NUR echte ÖPNV-Haltestellen (mit Cache für erfolgreiche Treffer)
         public async Task<TransitStop?> GetNearbyStopAsync(double Lat, double Lon)
         {
             string cacheKey = $"{Lat.ToString("F4", CultureInfo.InvariantCulture)},{Lon.ToString("F4", CultureInfo.InvariantCulture)}";
@@ -55,10 +46,6 @@ namespace Backend.Services
             return stop;
         }
 
-        /// <summary>
-        /// Interne Methode zum Abfragen der VBB-API für Haltestellen in der Nähe
-        /// </summary>
-        /// </summary>
         private async Task<TransitStop?> FetchNearbyStopAsync(double Lat, double Lon)
         {
             try
@@ -113,10 +100,14 @@ namespace Backend.Services
             return null;
         }
 
-       /// <summary>
-       /// Berechnet eine ÖPNV-Verbindung zwischen einer Start-Haltestelle und Ziel-Koordinaten
-       /// </summary>
-        public async Task<TransitConnection?> GetConnectionAsync(string stopId, double targetLat, double targetLon, DateTimeOffset departureTime)
+        // Berechnet die ÖPNV-Fahrzeit und die Strecke aus den Legs
+        private static readonly string[] AllProducts =
+        {
+            "nationalExpress", "national", "regionalExpress", "regional",
+            "suburban", "bus", "ferry", "subway", "tram"
+        };
+
+        public async Task<TransitConnection?> GetConnectionAsync(string stopId, double targetLat, double targetLon, DateTimeOffset departureTime, IEnumerable<string>? products = null)
         {
             try
             {
@@ -136,7 +127,15 @@ namespace Backend.Services
                 string formattedDeparture = departureTime.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
 
                 // polylines=true: VBB liefert die Streckengeometrie jedes Legs mit
-                string url = $"https://v6.vbb.transport.rest/journeys?from={stopId}&to={targetStop.Id}&departure={formattedDeparture}&results=1&polylines=true";
+                string productParams = "";
+                if (products != null && products.Any())
+                {
+                    var selected = new HashSet<string>(products, StringComparer.OrdinalIgnoreCase);
+                    productParams = string.Concat(AllProducts.Select(p =>
+                        $"&products[{p}]={(selected.Contains(p) ? "true" : "false")}"));
+                }
+
+                string url = $"https://v6.vbb.transport.rest/journeys?from={stopId}&to={targetStop.Id}&departure={formattedDeparture}&results=1&polylines=true{productParams}";
 
                 using var response = await _httpClient.GetAsync(url);
                 if (!response.IsSuccessStatusCode) return null;
@@ -194,7 +193,7 @@ namespace Backend.Services
 
                 if (totalMinutes <= 0) return null;
 
-                // 2. Geometrie für die Karte encodieren
+                // 2. GEOMETRIE: Fehler hier dürfen die Zeit nicht verwerfen.
                 string encodedPolyline = "";
                 try
                 {
@@ -224,9 +223,7 @@ namespace Backend.Services
             }
         }
 
-        /// <summary>
-        /// Zerlegt die Legs einer VBB-Verbindung in lesbare Abschnitte (Linie oder Fußweg)
-        /// </summary>
+        // Zerlegt die Legs einer VBB-Verbindung in lesbare Abschnitte (Linie oder Fußweg)
         public static List<TransitLeg> ParseLegs(IEnumerable<JsonElement> legs)
         {
             var result = new List<TransitLeg>();
@@ -354,9 +351,7 @@ namespace Backend.Services
             }
         }
 
-        /// <summary>
-        /// Encodiert Koordinaten in das Google Polyline Format für die Leaflet-Karte.
-        /// <summary/>
+        // Google Encoded Polyline Algorithm (Genauigkeit 1e5), passend zu L.Polyline.fromEncoded
         public static string EncodePolyline(IList<(double Lat, double Lon)> points)
         {
             var sb = new StringBuilder();
