@@ -8,9 +8,10 @@ const OSM_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">Op
 const MAP_STYLES = {
     dark: {
         label: 'Dunkel',
-        url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        subdomains: 'abc',
         maxZoom: 19,
-        attribution: OSM_ATTRIBUTION + ' © CARTO'
+        attribution: OSM_ATTRIBUTION
     },
     hot: {
         label: 'Standard',
@@ -18,13 +19,6 @@ const MAP_STYLES = {
         subdomains: 'abc',
         maxZoom: 19,
         attribution: OSM_ATTRIBUTION + ', Humanitarian-Stil'
-    },
-    osm: {
-        label: 'OSM Klassik',
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        subdomains: 'abc',
-        maxZoom: 19,
-        attribution: OSM_ATTRIBUTION
     }
 };
 
@@ -71,6 +65,13 @@ function setMapStyle(key, persist = true) {
     currentMapStyle = key;
 
     if (persist) saveMapStyle(key);
+
+    const mapContainer = map.getContainer();
+    if (key === 'dark') {
+        mapContainer.classList.add('map-dark-mode');
+    } else {
+        mapContainer.classList.remove('map-dark-mode');
+    }
 
     document.querySelectorAll('.map-style-switch__btn').forEach(btn => {
         const active = btn.dataset.style === key;
@@ -224,8 +225,8 @@ function destinationMarkerIcon() {
     const svg =
         '<svg viewBox="0 0 34 44" width="34" height="44" aria-hidden="true">' +
         '<path d="M17 1C8 1 1 8 1 17C1 28 17 43 17 43C17 43 33 28 33 17C33 8 26 1 17 1Z" ' +
-        'fill="#5b67f0" stroke="#ffffff" stroke-width="2"/>' +
-        '<circle cx="17" cy="17" r="6" fill="#ffffff"/>' +
+        'fill="#aef65c" stroke="#000000" stroke-width="2"/>' +
+        '<circle cx="17" cy="17" r="6" fill="#000000"/>' +
         '</svg>';
 
     return L.divIcon({
@@ -268,7 +269,7 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
 
 function clearMapResults() {
     [startMarker, destinationMarker, ...parkingMarkers,
-     currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer]
+        currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer]
         .forEach(layer => { if (layer) map.removeLayer(layer); });
 
     startMarker = null;
@@ -378,7 +379,7 @@ async function drawFullIntermodalRoute(
     if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
-                color: '#8b5cf6',
+                color: '#88ff00',
                 weight: 5,
                 opacity: 0.85
             }).addTo(map);
@@ -390,7 +391,7 @@ async function drawFullIntermodalRoute(
         const endLon = isValidCoord(targetStopLon) ? targetStopLon : destLon;
 
         currentTransitRouteLayer = L.polyline([[parkLat, parkLon], [endLat, endLon]], {
-            color: '#8b5cf6',
+            color: '#aef65c',
             weight: 4,
             dashArray: '6, 8'
         }).addTo(map);
@@ -445,7 +446,7 @@ async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
         if (data.routes && data.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(data.routes[0].geometry, {
                 style: {
-                    color: '#2563eb',
+                    color: '#00bfff',
                     weight: 6,
                     opacity: 0.9
                 }

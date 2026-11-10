@@ -153,7 +153,7 @@ function renderRecentSearches() {
         <div class="recent-chips">
             ${history.slice(0, 3).map((item, index) => `
                 <button type="button" class="recent-chip" data-index="${index}">
-                    📍 ${escapeHtml(item.start)} ➔ ${escapeHtml(item.destination)}
+                    ${escapeHtml(item.start)} ➔ ${escapeHtml(item.destination)}
                 </button>
             `).join('')}
         </div>

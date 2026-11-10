@@ -92,6 +92,9 @@
         visibility: hidden;
         pointer-events: none;
     }
+    .sheet-tabs{
+        margin-top: 15px;
+    }
 
     .sheet-grabber {
         display: flex;
@@ -192,7 +195,7 @@
         gap: 10px;
         margin-top: 0;
         padding: 10px 0;
-        background: var(--surface);
+        background: none;
         z-index: 1000;
     }
 

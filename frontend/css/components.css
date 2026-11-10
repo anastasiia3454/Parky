@@ -1,8 +1,9 @@
+
 :root {
     --route-drive: #00bfff;
     --route-park: #9ca3af;
-    --route-transit: #8b5cf6;
-    --route-walk: #f97316;
+    --route-transit: #aef65c;
+    --route-walk: white;
     --ui-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -71,7 +72,9 @@
 }
 
 @keyframes toastSpin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .toast--info {
@@ -114,8 +117,13 @@
 }
 
 @keyframes routesFade {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .routes__head {
@@ -150,13 +158,13 @@
 }
 
 .route-card:hover {
-    border-color: #ff751f;
+    border-color: #aef65c;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .route-card.is-selected {
-    border-color: #ff751f;
-    box-shadow: 0 0 0 3px rgba(255, 117, 31, 0.25);
+    border-color: #aef65c;
+    box-shadow: 0 0 0 3px rgba(174, 246, 92, 0.25);
 }
 
 .route-card__head {
@@ -188,7 +196,7 @@
     line-height: 1.2;
     text-align: right;
     white-space: nowrap;
-    color: #ff751f;
+    color: white;
 }
 
 .route-card__total small {
@@ -209,14 +217,14 @@
     background: #1a0f08;
     font-size: 0.75rem;
     font-weight: 700;
-    color: #ff751f;
+    color: #aef65c;
 }
 
 .route-card__badge svg {
     width: 14px;
     height: 14px;
     fill: none;
-    stroke: #ff751f;
+    stroke: #aef65c;
     stroke-width: 2;
     stroke-linejoin: round;
 }
@@ -233,10 +241,21 @@
     border-radius: 4px;
 }
 
-.route-card__seg--drive   { background: var(--route-drive); }
-.route-card__seg--park    { background: var(--route-park); }
-.route-card__seg--transit { background: var(--route-transit); }
-.route-card__seg--walk    { background: var(--route-walk); }
+.route-card__seg--drive {
+    background: var(--route-drive);
+}
+
+.route-card__seg--park {
+    background: var(--route-park);
+}
+
+.route-card__seg--transit {
+    background: var(--route-transit);
+}
+
+.route-card__seg--walk {
+    background: var(--route-walk);
+}
 
 .route-card__legend {
     display: grid;
@@ -272,28 +291,29 @@
     padding: 11px 14px;
     border: none;
     border-radius: 10px;
-    background: #ff751f;
+    background: #ffffff;
     font: inherit;
     font-size: 0.9rem;
     font-weight: 700;
-    color: #ffffff;
+    color: black;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .route-card__btn:hover {
-    background: #e05e0d;
+    background: rgb(194, 193, 193);
     transform: translateY(-1px);
 }
 
 .route-card__btn:focus-visible {
-    outline: 3px solid rgba(255, 117, 31, 0.4);
+    outline: 3px solid #aef65c8d;
     outline-offset: 2px;
 }
 
 .route-card.is-selected .route-card__btn {
     background: #000000;
-    border: 1px solid #ff751f;
+    border: 1px solid #aef65c;
+    color: #aef65c;
 }
 
 .route-card.is-selected .route-card__btn::before {
@@ -301,6 +321,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .toast,
     .routes,
     .route-card,
@@ -421,14 +442,21 @@
     margin: -4px 0 14px;
     padding: 16px 16px 6px;
     background: #000000;
-    border: 1.5px solid #ff751f;
+    border: 1.5px solid #aef65c;
     border-radius: 16px;
     animation: routeDetailIn 0.35s var(--ui-ease);
 }
 
 @keyframes routeDetailIn {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: none; }
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .route-detail__head {
@@ -458,7 +486,7 @@
 .route-detail__total {
     font-size: 1.05rem;
     font-weight: 800;
-    color: #ff751f;
+    color: #aef65c;
     white-space: nowrap;
     text-align: right;
 }
@@ -538,7 +566,7 @@
 .route-detail__time {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #ffffff;
+    color: #aef65c;
     white-space: nowrap;
 }
 
@@ -571,10 +599,21 @@
     color: #9ca3af;
 }
 
-.route-detail__step--drive { --rail: var(--route-drive); }
-.route-detail__step--park  { --rail: var(--route-park); }
-.route-detail__step--walk  { --rail: var(--route-walk); }
-.route-detail__step--transit { --rail: var(--route-transit); }
+.route-detail__step--drive {
+    --rail: var(--route-drive);
+}
+
+.route-detail__step--park {
+    --rail: var(--route-park);
+}
+
+.route-detail__step--walk {
+    --rail: var(--route-walk);
+}
+
+.route-detail__step--transit {
+    --rail: var(--route-transit);
+}
 
 .leaflet-marker-icon.parky-marker {
     background: none;
@@ -608,8 +647,13 @@
 }
 
 @keyframes parky-sway {
-    from { transform: rotate(-4deg); }
-    to   { transform: rotate(4deg); }
+    from {
+        transform: rotate(-4deg);
+    }
+
+    to {
+        transform: rotate(4deg);
+    }
 }
 
 .parky-marker--start .parky-marker__sway {
@@ -674,14 +718,14 @@
     align-items: center;
     padding: 14px 16px;
     border-radius: 10px;
-    background: #1a0f08;
-    border: 1px solid #ff751f;
+    background: #aef65c15;
+    border: 1px solid  #aef65c;
     color: #ffffff;
 }
 
 .cost-summary b {
     font-size: 1.15rem;
-    color: #ff751f;
+    color: #aef65c;
 }
 
 .cost-list {
@@ -757,19 +801,34 @@
 
 .ticket-btn:hover {
     background: #1a0f08;
-    border-color: #ff751f;
+    border-color: white;
+}
+
+/* ==========================================================================
+   5. VERKEHRSMITTEL CHIPS (BLOCK & SLIDER CONTAINER)
+   ========================================================================== */
+.product-filter-group .slider-header {
+    margin-bottom: 10px;
+}
+
+.product-filter-container {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-top: 8px;
 }
 
 .product-filter {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    width: max-content;
 }
 
 .product-chip {
     display: inline-flex;
-    align-items: center;
     cursor: pointer;
+    user-select: none;
 }
 
 .product-chip input {
@@ -780,25 +839,169 @@
     pointer-events: none;
 }
 
-.product-chip span {
-    padding: 6px 12px;
-    border: 1.5px solid #262626;
-    border-radius: 999px;
+/* Nicht ausgewählt: Abgedunkelt / Grau */
+.chip-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 78px;
+    height: 78px;
+    padding: 8px;
     background: #0d0d0d;
-    color: #9ca3af;
-    font-size: 0.82rem;
-    font-weight: 600;
+    border: 1.5px solid #262626;
+    border-radius: 14px;
+    opacity: 0.55;
     transition: all 0.2s ease;
-    user-select: none;
 }
 
-.product-chip input:checked + span {
-    border-color: #ff751f;
-    background: #1a0f08;
+.chip-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: #737373;
+    transition: all 0.2s ease;
+}
+
+.chip-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Etwas kleinerer Text für ungarierte/nicht ausgewählte Chips */
+.chip-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #737373;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+/* Ausgewählter Zustand: Volle Deckkraft, weiß & kontraststark */
+.product-chip input:checked + .chip-card {
+    border-color: #aef65c;
+    background: #171717;
+    opacity: 1;
+    box-shadow: 0 4px 12px rgba(174, 246, 92, 0.1);
+}
+
+.product-chip input:checked + .chip-card .chip-icon {
+    color: #aef65c;
+}
+
+.product-chip input:checked + .chip-card .chip-label {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.65rem;
+}
+
+.product-chip:hover .chip-card {
+    opacity: 0.8;
+    border-color: #525252;
+}
+
+.product-chip input:focus-visible + .chip-card {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+.leaflet-control.map-style-switch {
+    float: none;
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    padding: 4px;
+    border: none;
+    border-radius: 12px;
+    background: #000000;
+    border: 1px solid #262626;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+}
+
+.map-style-switch__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    color: #a3a3a3;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.map-style-switch__btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.map-style-switch__btn.is-active {
     color: #ffffff;
 }
 
-.product-chip input:focus-visible + span {
-    outline: 2px solid #ff751f;
-    outline-offset: 2px;
+.map-style-switch__btn.is-active .map-style-switch__thumb {
+    border-color: #ffffff;
+}
+
+.leaflet-marker-icon.parky-marker {
+    background: none;
+    border: none;
+}
+
+.parky-marker__sway {
+    width: 100%;
+    height: 100%;
+    animation: parky-sway 2.6s ease-in-out infinite alternate;
+}
+
+.parky-marker__dot {
+    display: block;
+    width: 22px;
+    height: 22px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: #007aff;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.parky-marker--end .parky-marker__sway {
+    transform-origin: 50% 100%;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+
+.parky-marker--end svg {
+    display: block;
+}
+
+@keyframes parky-sway {
+    from {
+        transform: rotate(-4deg);
+    }
+
+    to {
+        transform: rotate(4deg);
+    }
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .toast,
+    .routes,
+    .route-card,
+    .route-card__btn,
+    .parky-marker__sway {
+        transition-duration: 0.01s;
+        animation-duration: 0.01s;
+    }
 }

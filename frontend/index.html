@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parky – Smart P+R Routing</title>
+    <title>Parky</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -22,31 +22,38 @@
             <div class="welcome-logo-container">
                 <img src="./images/Parky.gif" alt="Parky Logo" class="welcome-logo">
             </div>
-            <h2>Willkommen bei Parky!</h2>
+            <h2>Herzlich Willkommen!</h2>
 
             <div class="terms-container">
                 <label class="terms-label">
                     <input type="checkbox" id="acceptTerms">
-                    <span>Ich akzeptiere die <button type="button" id="toggleTermsBtn" class="terms-link-btn">Nutzungsbedingungen</button></span>
+                    <span>Ich akzeptiere die <button type="button" id="toggleTermsBtn"
+                            class="terms-link-btn">Nutzungsbedingungen</button></span>
                 </label>
             </div>
 
             <div id="termsInfoBox" class="terms-info-box" hidden>
                 <h3>⚠️ Wichtiger Hinweis & Haftungsausschluss</h3>
                 <p>
-                    Dieses Projekt ist ein nicht-kommerzielles Lernprojekt. Die bereitgestellten Routen und Parkplatzdaten
-                    basieren auf externen Diensten (OpenStreetMap, OSRM, VBB über transport.rest) und erheben keinen Anspruch
-                    auf Vollständigkeit, Aktualität oder Fehlerfreiheit. Abfahrtszeiten bitte immer im offiziellen Fahrplan
+                    Dieses Projekt ist ein nicht-kommerzielles Lernprojekt. Die bereitgestellten Routen und
+                    Parkplatzdaten
+                    basieren auf externen Diensten (OpenStreetMap, OSRM, VBB über transport.rest) und erheben keinen
+                    Anspruch
+                    auf Vollständigkeit, Aktualität oder Fehlerfreiheit. Abfahrtszeiten bitte immer im offiziellen
+                    Fahrplan
                     prüfen. Die Nutzung erfolgt auf eigene Gefahr; es wird keinerlei Haftung übernommen.
                 </p>
 
                 <h3>🗺️ Datenquellen & Lizenzen</h3>
                 <p>Parky ist ein nicht-kommerzielles Lernprojekt. Die App nutzt folgende Dienste:</p>
                 <ul>
-                    <li>Kartendaten und Adresssuche: © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap-Mitwirkende</a> (Open Database License)</li>
+                    <li>Kartendaten und Adresssuche: © <a href="https://www.openstreetmap.org/copyright"
+                            target="_blank">OpenStreetMap-Mitwirkende</a> (Open Database License)</li>
                     <li>Parkplätze: Overpass API (OpenStreetMap-Daten)</li>
-                    <li>Fahrzeiten mit dem Auto und Fußweg: <a href="https://project-osrm.org" target="_blank">OSRM</a></li>
-                    <li>ÖPNV-Verbindungen: VBB über <a href="https://transport.rest" target="_blank">transport.rest</a></li>
+                    <li>Fahrzeiten mit dem Auto und Fußweg: <a href="https://project-osrm.org" target="_blank">OSRM</a>
+                    </li>
+                    <li>ÖPNV-Verbindungen: VBB über <a href="https://transport.rest" target="_blank">transport.rest</a>
+                    </li>
                     <li>Kartenbibliothek: <a href="https://leafletjs.com" target="_blank">Leaflet</a></li>
                 </ul>
             </div>
@@ -72,7 +79,7 @@
 
             <div class="sheet-body" id="sheetBody">
                 <div class="sidebar-header">
-                    <img src="./images/Parky.png" alt="Parky Logo" class="brand-logo">
+                    <img src="./images/Parky.gif" alt="Parky Logo" class="brand-logo">
                 </div>
 
                 <form id="routeForm">
@@ -95,7 +102,6 @@
                     <div class="input-group slider-group">
                         <div class="slider-header">
                             <label for="weightSpeed">Priorität</label>
-                            <span class="slider-value-badge" id="sliderBadge">Balance</span>
                         </div>
                         <div class="slider-labels">
                             <span>Schnelligkeit</span>
@@ -107,19 +113,117 @@
                     <div class="input-group product-filter-group">
                         <div class="slider-header">
                             <label>Verkehrsmittel</label>
-                            <button type="button" id="btnDeutschlandticket" class="ticket-btn">Nur Deutschlandticket</button>
+                            <button type="button" id="btnDeutschlandticket" class="ticket-btn">Nur
+                                Deutschlandticket</button>
                         </div>
-                        <div class="product-filter">
-                            <label class="product-chip"><input type="checkbox" value="subway" checked><span>U-Bahn</span></label>
-                            <label class="product-chip"><input type="checkbox" value="suburban" checked><span>S-Bahn</span></label>
-                            <label class="product-chip"><input type="checkbox" value="tram" checked><span>Tram</span></label>
-                            <label class="product-chip"><input type="checkbox" value="bus" checked><span>Bus</span></label>
-                            <label class="product-chip"><input type="checkbox" value="regional,regionalExpress" checked><span>Regional</span></label>
-                            <label class="product-chip"><input type="checkbox" value="nationalExpress,national" checked><span>Fernverkehr</span></label>
+                        <div class="product-filter-container">
+                            <div class="product-filter">
+                                <!-- U-Bahn Logo -->
+                                <label class="product-chip">
+                                    <input type="checkbox" value="subway" checked>
+                                    <div class="chip-card">
+                                        <div class="chip-icon">
+                                            <svg viewBox="0 0 100 100" width="28" height="28"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <rect width="100" height="100" fill="#ffffff" rx="12" />
+                                                <text x="50" y="74" font-family="'Plus Jakarta Sans', Arial, sans-serif"
+                                                    font-weight="900" font-size="78" fill="#000000"
+                                                    text-anchor="middle">U</text>
+                                            </svg>
+                                        </div>
+                                        <span class="chip-label">U-Bahn</span>
+                                    </div>
+                                </label>
+
+                                <!-- S-Bahn Logo -->
+                                <label class="product-chip">
+                                    <input type="checkbox" value="suburban" checked>
+                                    <div class="chip-card">
+                                        <div class="chip-icon">
+                                            <svg viewBox="0 0 100 100" width="28" height="28"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="50" cy="50" r="50" fill="#ffffff" />
+                                                <text x="50" y="74" font-family="'Plus Jakarta Sans', Arial, sans-serif"
+                                                    font-weight="800" font-size="76" fill="#000000"
+                                                    text-anchor="middle">S</text>
+                                            </svg>
+                                        </div>
+                                        <span class="chip-label">S-Bahn</span>
+                                    </div>
+                                </label>
+
+                                <!-- Tram Logo -->
+                                <label class="product-chip">
+                                    <input type="checkbox" value="tram" checked>
+                                    <div class="chip-card">
+                                        <div class="chip-icon">
+                                            <svg viewBox="0 0 100 100" width="28" height="28"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <rect width="100" height="100" fill="#ffffff" rx="12" />
+                                                <text x="50" y="62" font-family="'Plus Jakarta Sans', Arial, sans-serif"
+                                                    font-weight="800" font-size="34" fill="#000000"
+                                                    text-anchor="middle">Tram</text>
+                                            </svg>
+                                        </div>
+                                        <span class="chip-label">Tram</span>
+                                    </div>
+                                </label>
+
+                                <!-- Bus Logo -->
+                                <label class="product-chip">
+                                    <input type="checkbox" value="bus" checked>
+                                    <div class="chip-card">
+                                        <div class="chip-icon">
+                                            <svg viewBox="0 0 100 100" width="28" height="28"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="50" cy="50" r="50" fill="#ffffff" />
+                                                <text x="50" y="63" font-family="'Plus Jakarta Sans', Arial, sans-serif"
+                                                    font-weight="900" font-size="38" fill="#000000" text-anchor="middle"
+                                                    letter-spacing="-1">BUS</text>
+                                            </svg>
+                                        </div>
+                                        <span class="chip-label">Bus</span>
+                                    </div>
+                                </label>
+
+                                <!-- Regional Logo -->
+                                <label class="product-chip">
+                                    <input type="checkbox" value="regional,regionalExpress" checked>
+                                    <div class="chip-card">
+                                        <div class="chip-icon">
+                                            <svg viewBox="0 0 100 100" width="28" height="28"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <rect width="100" height="100" fill="#ffffff" rx="12" />
+                                                <text x="50" y="64" font-family="'Plus Jakarta Sans', Arial, sans-serif"
+                                                    font-weight="800" font-size="36" fill="#000000"
+                                                    text-anchor="middle">REG</text>
+                                            </svg>
+                                        </div>
+                                        <span class="chip-label">Regional</span>
+                                    </div>
+                                </label>
+
+                                <!-- Fernverkehr Logo -->
+                                <label class="product-chip">
+                                    <input type="checkbox" value="nationalExpress,national" checked>
+                                    <div class="chip-card">
+                                        <div class="chip-icon">
+                                            <svg viewBox="0 0 100 100" width="28" height="28"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="50" cy="50" r="50" fill="#ffffff" />
+                                                <text x="50" y="64" font-family="'Plus Jakarta Sans', Arial, sans-serif"
+                                                    font-weight="800" font-size="38" fill="#000000"
+                                                    text-anchor="middle">ICE</text>
+                                            </svg>
+                                        </div>
+                                        <span class="chip-label">Fernverkehr</span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-actions">
+                    <div class="form-actions" style="background-color: none;">
                         <button type="submit" id="btnSearch" class="btn-submit">
                             <span>Parkplätze & Routen suchen</span>
                         </button>
@@ -132,8 +236,10 @@
 
                 <div class="divider"></div>
                 <div class="sheet-tabs" role="tablist">
-                    <button type="button" class="sheet-tab is-active" data-tab="routes" role="tab" aria-selected="true">Routen</button>
-                    <button type="button" class="sheet-tab" data-tab="costs" role="tab" aria-selected="false">Parkgebühren</button>
+                    <button type="button" class="sheet-tab is-active" data-tab="routes" role="tab"
+                        aria-selected="true">Routen</button>
+                    <button type="button" class="sheet-tab" data-tab="costs" role="tab"
+                        aria-selected="false">Parkgebühren</button>
                 </div>
                 <div id="results" class="results-container">
                     <div class="empty-state">
