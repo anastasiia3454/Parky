@@ -1,0 +1,49 @@
+.input-group:has(> input[type="text"]) {
+    position: relative;
+}
+
+#sidebar {
+    overflow-x: hidden;
+}
+
+.suggest-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+    max-width: 100%;
+    z-index: 20;
+    margin-top: 6px;
+    padding: 6px;
+    list-style: none;
+    max-height: 260px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #0d0d0d;
+    border: 1px solid #262626;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.9);
+}
+
+.suggest-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #ffffff;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.suggest-item:hover,
+.suggest-item.is-active {
+    background: #171717;
+    color: #aef65c;
+}
+
+.suggest-item:not(:last-child) {
+    margin-bottom: 2px;
+}
