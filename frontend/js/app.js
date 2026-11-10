@@ -1,5 +1,6 @@
 const closeWindow = document.getElementById("closeModal");
 const welcomeModal = document.querySelector(".welcome-window");
+let currentRouteController = null;
 
 if (sessionStorage.getItem("modalState") === "closed" && welcomeModal) {
     welcomeModal.style.display = "none";
@@ -243,7 +244,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         } finally {
             routeStatus.close();
         }
-
+        
     } catch (error) {
         console.error(error);
         const message = error && error.message && error.message.startsWith('Adresse nicht gefunden')
@@ -376,25 +377,37 @@ function buildDirectCarCard(directCarRoute) {
     card.innerHTML = `
         <header class="route-card__head">
             <div>
-                <span class="route-card__option" style="background: #2563eb; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Direktfahrt</span>
-                <span class="route-card__place" style="margin-top: 4px; display: block;">Nur mit dem Auto (ohne ÖPNV)</span>
+                <span class="route-card__badge route-card__badge--car">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="8" width="18" height="10" rx="2"/>
+                        <circle cx="7" cy="18" r="2"/>
+                        <circle cx="17" cy="18" r="2"/>
+                        <path d="M5 8l2-4h10l2 4"/>
+                    </svg>
+                    Direktfahrt Auto
+                </span>
+                <span class="route-card__place" style="margin-top: 8px;">Ohne Umstieg & ÖPNV</span>
             </div>
-            <div class="route-card__total">
+            <div class="route-card__total" style="color: #00bfff;">
                 ${formatDuration(minutes)}
                 <small>${km} km · Gesamtzeit</small>
             </div>
         </header>
-        <div class="route-card__bar" aria-hidden="true">
-            <span class="route-card__seg route-card__seg--drive" style="flex-grow: 100; background: #2563eb;"></span>
+
+        <div class="route-detail route-detail--car" style="margin-top: 6px;">
+            <div class="route-detail__steps">
+                <div class="route-detail__step route-detail__step--drive">
+                    <div class="route-detail__dot"></div>
+                    <div class="route-detail__body">
+                        <div class="route-detail__name">Direkte Autofahrt zum Ziel</div>
+                        <div class="route-detail__meta">Kein Parken erforderlich • Direkt zum Zielpunkt</div>
+                    </div>
+                    <div class="route-detail__time" style="color: #00bfff;">${minutes} Min.</div>
+                </div>
+            </div>
         </div>
-        <ul class="route-card__legend">
-            <li>
-                <i class="route-card__dot" style="background: #2563eb; width: 10px; height: 10px; border-radius: 50%; display: inline-block;"></i>
-                <span>Direkte Autofahrt zum Ziel</span>
-                <b>${minutes} Min.</b>
-            </li>
-        </ul>
-        <button type="button" class="route-card__btn">Direkte Route wählen</button>
+
+        <button type="button" class="route-card__btn">Auswählen</button>
     `;
     return card;
 }
@@ -442,12 +455,19 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
 
         const cards = [];
 
-        const selectRoute = (route, card, userAction = true) => {
-            cards.forEach(c => {
-                const isSelected = c === card;
-                c.classList.toggle('is-selected', isSelected);
-                c.querySelector('.route-card__btn').textContent = isSelected ? 'Ausgewählt' : 'Auswählen';
+        // Zentrale Funktion, die alle Auswahl-Klassen und Buttons im Container zuverlässig zurücksetzt
+        const clearAllSelections = () => {
+            container.querySelectorAll('.route-card').forEach(c => {
+                c.classList.remove('is-selected', 'is-selected--car');
+                const btn = c.querySelector('.route-card__btn');
+                if (btn) btn.textContent = 'Auswählen';
             });
+        };
+
+        const selectRoute = (route, card, userAction = true) => {
+            clearAllSelections();
+            card.classList.add('is-selected');
+            card.querySelector('.route-card__btn').textContent = 'Ausgewählt';
 
             showRouteDetail(route, card, userAction);
             showOnlyParking(route.parkingLat, route.parkingLon);
@@ -501,11 +521,10 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             if (windowDirectCarRoute && directMinutes <= 15) {
                 directCard = buildDirectCarCard(windowDirectCarRoute);
                 directCard.addEventListener('click', () => {
-                    cards.forEach(c => {
-                        c.classList.remove('is-selected');
-                        c.querySelector('.route-card__btn').textContent = 'Auswählen';
-                    });
-                    directCard.classList.add('is-selected');
+                    clearAllSelections();
+                    container.querySelectorAll(':scope > .route-detail').forEach(el => el.remove());
+                    
+                    directCard.classList.add('is-selected', 'is-selected--car');
                     directCard.querySelector('.route-card__btn').textContent = 'Ausgewählt';
 
                     if (typeof parkingMarkers !== 'undefined') {
@@ -683,7 +702,7 @@ function showRouteDetail(route, card, userAction = true) {
     const container = card.parentElement;
     if (!container) return;
 
-    container.querySelectorAll('.route-detail').forEach(el => el.remove());
+    container.querySelectorAll(':scope > .route-detail').forEach(el => el.remove());
 
     const index = Array.prototype.indexOf.call(container.querySelectorAll('.route-card'), card);
     const isBest = card.classList.contains('is-best');

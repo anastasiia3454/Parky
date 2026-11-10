@@ -1005,3 +1005,30 @@
         animation-duration: 0.01s;
     }
 }
+
+/* --- Redesign Direktfahrt Stile --- */
+.route-card__badge--car {
+    background: rgba(0, 191, 255, 0.12) !important;
+    color: #00bfff !important;
+    border: 1px solid rgba(0, 191, 255, 0.3) !important;
+}
+
+.route-card__badge--car svg {
+    stroke: #00bfff !important;
+}
+
+.route-detail--car {
+    border-color: #00bfff !important;
+    box-shadow: 0 4px 20px rgba(0, 191, 255, 0.15) !important;
+}
+
+.route-card.is-selected--car {
+    border-color: #00bfff !important;
+    box-shadow: 0 0 0 2px #00bfff !important;
+}
+
+.route-card.is-selected--car .route-card__btn {
+    background: #000000 !important;
+    color: #00bfff !important;
+    border: 1.5px solid #00bfff !important;
+}
