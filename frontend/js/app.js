@@ -704,7 +704,13 @@ function showRouteDetail(route, card, userAction = true) {
 
     container.querySelectorAll(':scope > .route-detail').forEach(el => el.remove());
 
-    const index = Array.prototype.indexOf.call(container.querySelectorAll('.route-card'), card);
+    const allCards = Array.from(container.querySelectorAll('.route-card'));
+    const hasDirectCar = container.querySelector('.route-card--direct-car') !== null;
+    let index = allCards.indexOf(card);
+    if (hasDirectCar) {
+        index -= 1;
+    }
+
     const isBest = card.classList.contains('is-best');
     const detail = buildRouteDetail(route, index, isBest);
 
