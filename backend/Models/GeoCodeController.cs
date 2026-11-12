@@ -18,7 +18,9 @@ namespace Backend.Controllers
     {
         private const int MinChars = 3;
         private const int MaxChars = 120;
-        private static readonly TimeSpan ProviderTimeout = TimeSpan.FromSeconds(10);
+        // Photon kurz warten lassen, dann direkt auf Nominatim ausweichen
+        private static readonly TimeSpan PhotonTimeout = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan NominatimTimeout = TimeSpan.FromSeconds(6);
         private const string UserAgent = "ParkAndRideApp/1.0 (https://github.com/parkyapp)";
 
         private static readonly HashSet<string> PoiKeys = new(StringComparer.OrdinalIgnoreCase)
@@ -85,7 +87,7 @@ namespace Backend.Controllers
         private async Task<List<string>?> QueryPhotonAsync(string query)
         {
             var client = _clientFactory.CreateClient();
-            client.Timeout = ProviderTimeout;
+            client.Timeout = PhotonTimeout;
             client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 
             string url = "https://photon.komoot.io/api/?q=" + Uri.EscapeDataString(query)
@@ -101,7 +103,7 @@ namespace Backend.Controllers
         private async Task<List<string>> QueryNominatimAsync(string query)
         {
             var client = _clientFactory.CreateClient();
-            client.Timeout = ProviderTimeout;
+            client.Timeout = NominatimTimeout;
             client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("de");
 
