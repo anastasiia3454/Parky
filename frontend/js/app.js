@@ -205,11 +205,6 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         const startCoords = await geocodeAddress(startText);
         const destCoords = await geocodeAddress(destText);
 
-        resultsDiv.innerHTML = `
-            <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
-            <p><b>Ziel:</b> ${escapeHtml(destCoords.displayName)}</p>
-        `;
-
         status.update('Suche optimale P+R-Parkplätze …');
 
         const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
@@ -862,16 +857,6 @@ function renderCostPanel(routes) {
     const cheapest = withCost.length > 0
         ? `<div class="cost-summary"><span>Günstigste Option</span><b>${formatEuro(Math.min(...withCost))}</b></div>`
         : '';
-
-    panel.innerHTML = `
-        <div class="routes__head">
-            <h3 class="routes__title">Parkgebühren</h3>
-            <span class="routes__sub">Schätzung</span>
-        </div>
-        ${cheapest}
-        <ul class="cost-list">${items}</ul>
-        <p class="cost-note">Die tatsächliche Gebühr hängt von der echten Parkdauer und den Tarifen des Betreibers ab.</p>
-    `;
 }
 
 document.querySelectorAll('.sheet-tab').forEach(tab => {
@@ -1203,11 +1188,11 @@ function renderRoundTripPanel(panel, route, ret) {
             feeText = `Tarif unbekannt${route.feeDescription ? ` (OSM: ${escapeHtml(route.feeDescription)})` : ''}`;
         }
 
-        renderRoundTripCost(route, parkedMinutes, feeText);
+        renderRoundTripCost(route, parkedFrom, ret.arrivalAtParking, parkedMinutes, feeText);
     }
 }
 
-function renderRoundTripCost(route, parkedMinutes, feeText) {
+function renderRoundTripCost(route, parkedFrom, parkedUntilIso, parkedMinutes, feeText) {
     document.querySelectorAll('#roundtrip-cost').forEach(el => el.remove());
 
     const costPanel = document.getElementById('costPanel');
@@ -1217,9 +1202,11 @@ function renderRoundTripCost(route, parkedMinutes, feeText) {
     block.id = 'roundtrip-cost';
     block.className = 'roundtrip-cost';
     block.innerHTML = `
-        <div class="cost-summary"><span>Parkdauer (Hin- und Rückfahrt)</span><b>${formatDuration(parkedMinutes)}</b></div>
+        <div class="cost-summary"><span>Abgestellt am Parkplatz</span><b>${formatClock(new Date(parkedFrom).toISOString())}</b></div>
+        <div class="cost-summary"><span>Zurück am Parkplatz</span><b>${formatClock(parkedUntilIso)}</b></div>
+        <div class="cost-summary"><span>Parkdauer</span><b>${formatDuration(parkedMinutes)}</b></div>
         <div class="cost-summary"><span>Parkgebühr · ${escapeHtml(route.parkingName)}</span><b>${feeText}</b></div>
-        <p class="cost-note">Genau nach Minuten aus dem OSM-Tarif berechnet. Die tatsächliche Abrechnung kann nach angefangenen Stunden erfolgen.</p>
+        <p class="cost-note">Parkdauer = Zeit zwischen Abstellen und Rückkehr am Parkplatz. Die Gebühr wird genau nach Minuten aus dem OSM-Tarif berechnet. Die tatsächliche Abrechnung kann nach angefangenen Stunden erfolgen.</p>
     `;
     costPanel.appendChild(block);
 }

@@ -343,7 +343,7 @@ const MAP_LEG_COLORS = {
     tram: '#f43f5e',
     bus: '#c084fc',
     ferry: '#22d3ee',
-    regional: '#f5f5f5',
+    regional: '#980000',
     express: '#facc15'
 };
 

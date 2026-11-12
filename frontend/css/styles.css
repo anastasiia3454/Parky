@@ -719,3 +719,10 @@ input[type="range"] {
 .roundtrip-cost {
     margin-top: 10px;
 }
+
+.cost-summary{
+    margin-bottom: 20px;
+}
+.empty-state {
+    margin-top: 10px;
+}
