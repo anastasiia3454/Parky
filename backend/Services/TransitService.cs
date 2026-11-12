@@ -341,6 +341,9 @@ namespace Backend.Services
                     item.Minutes = Math.Max(0, (int)Math.Round((arr - dep).TotalMinutes));
                 }
 
+                var legPoints = ExtractLegCoordinates(new List<JsonElement> { leg });
+                item.Polyline = legPoints.Count > 0 ? EncodePolyline(legPoints) : "";
+
                 result.Add(item);
             }
 

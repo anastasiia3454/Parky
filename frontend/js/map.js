@@ -336,6 +336,38 @@ function showOnlyParking(lat, lon) {
     renderParkingMarkers(lastParkings, lat, lon);
 }
 
+// Farben für die Karte: hell genug für den dunklen Kartenstil
+const MAP_LEG_COLORS = {
+    subway: '#3b82f6',
+    suburban: '#22c55e',
+    tram: '#f43f5e',
+    bus: '#c084fc',
+    ferry: '#22d3ee',
+    regional: '#f5f5f5',
+    express: '#facc15'
+};
+
+// Jeder ÖPNV-Abschnitt in seiner Linienfarbe, Fußwege orange und gestrichelt
+function buildLegLayers(legs) {
+    if (!Array.isArray(legs) || typeof L.Polyline.fromEncoded !== 'function') return [];
+
+    const layers = [];
+    legs.forEach(leg => {
+        if (!leg || !leg.polyline) return;
+
+        const style = leg.isWalk
+            ? { color: '#f97316', weight: 4, opacity: 0.9, dashArray: '5, 8' }
+            : { color: MAP_LEG_COLORS[leg.product] || '#9ca3af', weight: 5, opacity: 0.9 };
+
+        try {
+            layers.push(L.Polyline.fromEncoded(leg.polyline, style));
+        } catch (e) {
+            console.error("Fehler beim Dekodieren eines ÖPNV-Abschnitts:", e);
+        }
+    });
+    return layers;
+}
+
 async function drawFullIntermodalRoute(
     startLat, startLon,
     parkLat, parkLon,
@@ -343,7 +375,8 @@ async function drawFullIntermodalRoute(
     polylineTransit = null,
     targetStopLat = null,
     targetStopLon = null,
-    hasDrive = true
+    hasDrive = true,
+    legs = null
 ) {
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
@@ -377,7 +410,10 @@ async function drawFullIntermodalRoute(
         console.error(hasDrive ? "Fehler beim Laden der Auto-Route:" : "Fehler beim Laden des Fußwegs zur Haltestelle:", err);
     }
 
-    if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
+    const legLayers = buildLegLayers(legs);
+    if (legLayers.length > 0) {
+        currentTransitRouteLayer = L.featureGroup(legLayers).addTo(map);
+    } else if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
                 color: '#88ff00',

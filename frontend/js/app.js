@@ -505,7 +505,8 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                     route.polylineTransit,
                     route.targetStopLat,
                     route.targetStopLon,
-                    hasDriveLeg(route)
+                    hasDriveLeg(route),
+                    route.legs
                 );
             }
 

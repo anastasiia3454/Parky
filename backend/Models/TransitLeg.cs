@@ -49,4 +49,9 @@ public class TransitLeg
     /// Dauer dieses Abschnitts in Minuten
     /// </summary>
     public int Minutes { get; set; }
+
+    /// <summary>
+    /// Kodierte Streckenlinie dieses Abschnitts (Google Polyline, Genauigkeit 1e5)
+    /// </summary>
+    public string Polyline { get; set; } = "";
 }
