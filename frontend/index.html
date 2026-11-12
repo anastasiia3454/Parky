@@ -242,7 +242,16 @@
                             </div>
                         </div>
                     </div>
-
+                    <div class="input-group">
+                        <label for="roundTrip">
+                            <input type="checkbox" id="roundTrip">
+                            <span>Hin- und Rückfahrt berechnen</span>
+                        </label>
+                        <div id="returnTimeWrap" hidden>
+                            <label for="returnTime">Rückfahrt ab Ziel</label>
+                            <input type="datetime-local" id="returnTime">
+                        </div>
+                    </div>
                     <div class="form-actions" style="background-color: none;">
                         <button type="submit" id="btnSearch" class="btn-submit">
                             <span>Parkplätze & Routen suchen</span>

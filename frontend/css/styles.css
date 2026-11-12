@@ -632,3 +632,80 @@ input[type="range"] {
 .leaflet-interactive {
     filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.547)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.8));
 }
+
+/* ==========================================================================
+   10. RÜCKFAHRT
+   ========================================================================== */
+.input-group input[type="datetime-local"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    font-size: 0.95rem;
+    font-family: inherit;
+    background-color: var(--surface-card);
+    color: #ffffff;
+    outline: none;
+    color-scheme: dark;
+}
+
+#returnTimeWrap {
+    margin-top: 12px;
+}
+
+#round-trip-panel .roundtrip-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+.roundtrip-leg {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    background-color: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-top: 8px;
+}
+
+.roundtrip-leg__title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.roundtrip-leg__meta {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.roundtrip-summary {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.roundtrip-summary > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background-color: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.roundtrip-summary span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.roundtrip-summary b {
+    font-size: 0.95rem;
+    color: #aef65c;
+}

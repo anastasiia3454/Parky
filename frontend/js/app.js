@@ -511,6 +511,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             }
 
             document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
+            updateRoundTrip(route, originLat, originLon, targetLat, targetLon);
         };
 
         // P+R-Routen laden (nur wenn sie angezeigt werden sollen)
@@ -968,4 +969,185 @@ if (toggleTermsBtn && termsInfoBox) {
             toggleTermsBtn.textContent = "Nutzungsbedingungen";
         }
     });
+}
+
+// ==========================================================================
+// RÜCKFAHRT
+// ==========================================================================
+
+function toLocalInputValue(date) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// Rückfahrtzeit nur anzeigen, wenn Hin- und Rückfahrt gewählt ist
+(function setupRoundTripInput() {
+    const toggle = document.getElementById('roundTrip');
+    const wrap = document.getElementById('returnTimeWrap');
+    const input = document.getElementById('returnTime');
+    if (!toggle || !wrap || !input) return;
+
+    toggle.addEventListener('change', () => {
+        wrap.hidden = !toggle.checked;
+        if (toggle.checked && !input.value) {
+            const now = new Date();
+            const defaultReturn = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+            input.min = toLocalInputValue(now);
+            input.value = toLocalInputValue(defaultReturn);
+        }
+    });
+})();
+
+// Parkgebühr nach Tarif aus OSM (charge), genau nach Minuten.
+// Erkannt werden "2 EUR/hour" bzw. "2 €/h" und optional "max. 12 EUR/day".
+function parseParkingRule(text) {
+    if (!text) return null;
+    const normalized = String(text).replace(/,/g, '.');
+    const hourly = normalized.match(/(\d+(?:\.\d+)?)\s*(?:€|EUR)?\s*\/\s*(?:h|Std|std|hour)/i);
+    if (!hourly) return null;
+    const daily = normalized.match(/max\.?\s*(\d+(?:\.\d+)?)\s*(?:€|EUR)?\s*\/\s*(?:day|d|Tag|tag)/i);
+    return {
+        hourly: parseFloat(hourly[1]),
+        dailyMax: daily ? parseFloat(daily[1]) : null
+    };
+}
+
+// Gibt die Gebühr in Euro zurück, 0 bei kostenlos, null wenn der Tarif unbekannt ist
+function calcParkingFee(route, minutes) {
+    if (route.feeStatus === 'free') return 0;
+    const rule = parseParkingRule(route.feeDescription);
+    if (!rule) return null;
+
+    const hours = minutes / 60;
+    let cost = rule.hourly * hours;
+    if (rule.dailyMax !== null) {
+        cost = Math.min(cost, rule.dailyMax * Math.max(1, Math.ceil(hours / 24)));
+    }
+    return Math.round(cost * 100) / 100;
+}
+
+async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon) {
+    const old = document.getElementById('round-trip-panel');
+    if (old) old.remove();
+
+    const toggle = document.getElementById('roundTrip');
+    if (!toggle || !toggle.checked) return;
+    const withCar = hasDriveLeg(route);
+
+    const returnInput = document.getElementById('returnTime');
+    if (!returnInput || !returnInput.value) {
+        showToast('Bitte eine Rückfahrtzeit eingeben.', { type: 'warning', duration: 5000 });
+        return;
+    }
+
+    const returnAt = new Date(returnInput.value);
+    const outboundArrival = Date.now() + Number(route.totalMinutes) * 60000;
+    if (returnAt.getTime() < outboundArrival) {
+        showToast('Die Rückfahrt muss nach der Ankunft am Ziel liegen.', { type: 'warning', duration: 6000 });
+        return;
+    }
+
+    const panel = document.createElement('section');
+    panel.id = 'round-trip-panel';
+    panel.className = 'routes';
+    panel.innerHTML = `
+        <div class="routes__head">
+            <h3 class="routes__title">Rückfahrt</h3>
+            <span class="routes__sub">Ziel → Parkplatz → Zuhause</span>
+        </div>
+        <p class="empty-state">Rückfahrt wird berechnet …</p>
+    `;
+    document.getElementById('results').appendChild(panel);
+
+    try {
+        const response = await fetch('https://parky-luln.onrender.com/api/ReturnRoute/calculate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                originLat: originLat,
+                originLon: originLon,
+                parkingLat: withCar ? route.parkingLat : originLat,
+                parkingLon: withCar ? route.parkingLon : originLon,
+                targetLat: targetLat,
+                targetLon: targetLon,
+                departureTime: returnAt.toISOString(),
+                driveMinutes: withCar ? Number(route.driveMinutes) : 0,
+                products: getSelectedProducts()
+            })
+        });
+
+        if (!response.ok) {
+            const message = await response.text();
+            throw new Error(message || `HTTP ${response.status}`);
+        }
+
+        const ret = await response.json();
+        renderRoundTripPanel(panel, route, ret);
+    } catch (err) {
+        console.error("Rückfahrt:", err);
+        const note = panel.querySelector('.empty-state');
+        if (note) note.textContent = `Rückfahrt nicht möglich: ${err.message}`;
+    }
+}
+
+function renderRoundTripPanel(panel, route, ret) {
+    const withCar = hasDriveLeg(route);
+
+    const legsHtml = (ret.legs || []).map(leg => {
+        if (leg.isWalk) {
+            return `<div class="roundtrip-leg">
+                <span class="roundtrip-leg__title">Zu Fuß · ${leg.minutes} Min.</span>
+                <span class="roundtrip-leg__meta">${escapeHtml(leg.fromName)} → ${escapeHtml(leg.toName)}</span>
+            </div>`;
+        }
+        return `<div class="roundtrip-leg">
+            <span class="roundtrip-leg__title">${escapeHtml(leg.lineName)} Richtung ${escapeHtml(leg.direction)} · ${leg.minutes} Min.</span>
+            <span class="roundtrip-leg__meta">${formatClock(leg.departure)} ${escapeHtml(leg.fromName)} → ${formatClock(leg.arrival)} ${escapeHtml(leg.toName)}</span>
+        </div>`;
+    }).join('');
+
+    let endHtml;
+    let summaryHtml = '';
+    if (withCar) {
+        // Parkdauer: vom Abstellen (Fahrzeit + Parkpuffer) bis zur Rückkehr am Parkplatz
+        const parkedFrom = Date.now() + (Number(route.driveMinutes) + Number(route.parkingBufferMinutes)) * 60000;
+        const parkedUntil = Date.parse(ret.arrivalAtParking);
+        const parkedMinutes = Math.max(0, Math.round((parkedUntil - parkedFrom) / 60000));
+
+        const fee = calcParkingFee(route, parkedMinutes);
+        let feeText;
+        if (route.feeStatus === 'free') {
+            feeText = 'kostenlos';
+        } else if (fee !== null) {
+            feeText = formatEuro(fee);
+        } else {
+            feeText = `Tarif unbekannt${route.feeDescription ? ` (OSM: ${escapeHtml(route.feeDescription)})` : ''}`;
+        }
+
+        endHtml = `<div class="roundtrip-leg">
+            <span class="roundtrip-leg__title">Mit dem Auto nach Hause · ${ret.driveHomeMinutes} Min.</span>
+            <span class="roundtrip-leg__meta">Ankunft ${formatClock(ret.arrivalHome)}</span>
+        </div>`;
+        summaryHtml = `
+            <div class="roundtrip-summary">
+                <div><span>Parkdauer</span><b>${formatDuration(parkedMinutes)}</b></div>
+                <div><span>Parkgebühr</span><b>${feeText}</b></div>
+            </div>
+            <p class="roundtrip-note">Die Gebühr wird genau nach Minuten aus dem OSM-Tarif berechnet. Die tatsächliche Abrechnung kann nach angefangenen Stunden erfolgen.</p>`;
+    } else {
+        endHtml = `<div class="roundtrip-leg">
+            <span class="roundtrip-leg__title">Zuhause angekommen</span>
+            <span class="roundtrip-leg__meta">Ankunft ${formatClock(ret.arrivalHome)}</span>
+        </div>`;
+    }
+
+    panel.innerHTML = `
+        <div class="routes__head">
+            <h3 class="routes__title">Rückfahrt</h3>
+            <span class="routes__sub">${withCar ? 'Ziel → Parkplatz → Zuhause' : 'Ziel → Zuhause'}</span>
+        </div>
+        ${legsHtml}
+        ${endHtml}
+        ${summaryHtml}
+    `;
 }
