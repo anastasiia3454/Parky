@@ -511,7 +511,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             }
 
             document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
-            updateRoundTrip(route, originLat, originLon, targetLat, targetLon);
+            updateRoundTrip(route, originLat, originLon, targetLat, targetLon, card);
         };
 
         // P+R-Routen laden (nur wenn sie angezeigt werden sollen)
@@ -1026,25 +1026,32 @@ function calcParkingFee(route, minutes) {
     return Math.round(cost * 100) / 100;
 }
 
-async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon) {
+async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon, card) {
     const old = document.getElementById('round-trip-panel');
     if (old) old.remove();
+    document.querySelectorAll('#roundtrip-cost').forEach(el => el.remove());
 
     const toggle = document.getElementById('roundTrip');
     if (!toggle || !toggle.checked) return;
     const withCar = hasDriveLeg(route);
 
+    // Rückfahrt wird direkt in der Detailansicht der gewählten Option angezeigt
+    const detail = card && card.nextElementSibling && card.nextElementSibling.classList.contains('route-detail')
+        ? card.nextElementSibling
+        : null;
+    if (!detail) return;
+
     const panel = document.createElement('section');
     panel.id = 'round-trip-panel';
-    panel.className = 'routes';
+    panel.className = 'roundtrip-section';
     panel.innerHTML = `
         <div class="routes__head">
             <h3 class="routes__title">Rückfahrt</h3>
-            <span class="routes__sub">${withCar ? 'Ziel → Parkplatz → Zuhause' : 'Ziel → Zuhause'}</span>
+            <span class="routes__sub">${withCar ? 'Ziel → Parkplatz → Rückziel' : 'Ziel → Rückziel'}</span>
         </div>
         <p class="empty-state">Rückfahrt wird berechnet …</p>
     `;
-    document.getElementById('results').appendChild(panel);
+    detail.appendChild(panel);
 
     const setNote = text => {
         const note = panel.querySelector('.empty-state');
@@ -1096,24 +1103,73 @@ async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon
 
 function renderRoundTripPanel(panel, route, ret) {
     const withCar = hasDriveLeg(route);
+    const legs = (ret.legs || []).filter(Boolean);
+    const m = (v) => Math.max(0, Math.round(Number(v) || 0));
+    const totalMinutes = (Date.parse(ret.arrivalHome) - Date.parse(ret.departureFromTarget)) / 60000;
 
-    const legsHtml = (ret.legs || []).map(leg => {
+    // Gleicher Aufbau wie die Routendetails der Hinfahrt
+    panel.className = 'route-detail roundtrip-section';
+    panel.innerHTML = `
+        <header class="route-detail__head">
+            <div>
+                <h4 class="route-detail__title">Rückfahrt: Routendetails</h4>
+                <span class="route-detail__sub">${withCar ? 'Ziel → Parkplatz → Rückziel' : 'Ziel → Rückziel'}</span>
+            </div>
+            <div class="route-detail__total">
+                ${formatDuration(totalMinutes)}
+                <small class="route-detail__sub">Gesamtzeit</small>
+            </div>
+        </header>
+    `;
+
+    const steps = document.createElement('ul');
+    steps.className = 'route-detail__steps';
+
+    legs.forEach((leg, i) => {
+        const minutes = m(leg.minutes);
+
         if (leg.isWalk) {
-            return `<div class="roundtrip-leg">
-                <span class="roundtrip-leg__title">Zu Fuß · ${leg.minutes} Min.</span>
-                <span class="roundtrip-leg__meta">${escapeHtml(leg.fromName)} → ${escapeHtml(leg.toName)}</span>
-            </div>`;
+            const isLast = i === legs.length - 1;
+            steps.appendChild(detailStep('walk', null, {
+                title: isLast ? (withCar ? 'Zu Fuß zum Auto' : 'Zu Fuß nach Rückziel') : 'Zu Fuß zur Haltestelle',
+                meta: `${escapeHtml(leg.fromName || '')}${leg.toName ? ' → ' + escapeHtml(leg.toName) : ''}`,
+                time: `${minutes} Min.`
+            }));
+            return;
         }
-        return `<div class="roundtrip-leg">
-            <span class="roundtrip-leg__title">${escapeHtml(leg.lineName)} Richtung ${escapeHtml(leg.direction)} · ${leg.minutes} Min.</span>
-            <span class="roundtrip-leg__meta">${formatClock(leg.departure)} ${escapeHtml(leg.fromName)} → ${formatClock(leg.arrival)} ${escapeHtml(leg.toName)}</span>
-        </div>`;
-    }).join('');
 
-    let endHtml;
-    let summaryHtml = '';
+        const color = productColor(leg.product);
+        const productLabel = PRODUCT_LABELS[leg.product] || 'ÖPNV';
+        const lineName = leg.lineName || productLabel;
+        const direction = leg.direction ? `Richtung ${leg.direction}` : productLabel;
+
+        steps.appendChild(detailStep('transit', color, {
+            title: direction,
+            lineHtml: `<span class="route-detail__line" style="--line-color:${color}">${escapeHtml(lineName)}</span>`,
+            meta: `${escapeHtml(productLabel)} · ${minutes} Min.`,
+            body: stopRow('Einsteigen', leg.fromName, formatClock(leg.departure))
+                + stopRow('Aussteigen', leg.toName, formatClock(leg.arrival)),
+            time: formatClock(leg.departure) || `${minutes} Min.`
+        }));
+    });
+
     if (withCar) {
-        // Parkdauer: vom Abstellen (Fahrzeit + Parkpuffer) bis zur Rückkehr am Parkplatz
+        steps.appendChild(detailStep('drive', null, {
+            title: 'Mit dem Auto nach Rückziel',
+            meta: 'Parkplatz → Rückziel',
+            time: `${m(ret.driveHomeMinutes)} Min.`
+        }));
+    }
+
+    steps.appendChild(detailStep('park', null, {
+        title: 'Ziel erreicht',
+        time: formatClock(ret.arrivalHome)
+    }));
+
+    panel.appendChild(steps);
+
+    // Parkdauer und Gebühr auf die Seite der Parkgebühren
+    if (withCar) {
         const parkedFrom = Date.now() + (Number(route.driveMinutes) + Number(route.parkingBufferMinutes)) * 60000;
         const parkedUntil = Date.parse(ret.arrivalAtParking);
         const parkedMinutes = Math.max(0, Math.round((parkedUntil - parkedFrom) / 60000));
@@ -1128,30 +1184,23 @@ function renderRoundTripPanel(panel, route, ret) {
             feeText = `Tarif unbekannt${route.feeDescription ? ` (OSM: ${escapeHtml(route.feeDescription)})` : ''}`;
         }
 
-        endHtml = `<div class="roundtrip-leg">
-            <span class="roundtrip-leg__title">Mit dem Auto nach Hause · ${ret.driveHomeMinutes} Min.</span>
-            <span class="roundtrip-leg__meta">Ankunft ${formatClock(ret.arrivalHome)}</span>
-        </div>`;
-        summaryHtml = `
-            <div class="roundtrip-summary">
-                <div><span>Parkdauer</span><b>${formatDuration(parkedMinutes)}</b></div>
-                <div><span>Parkgebühr</span><b>${feeText}</b></div>
-            </div>
-            <p class="roundtrip-note">Die Gebühr wird genau nach Minuten aus dem OSM-Tarif berechnet. Die tatsächliche Abrechnung kann nach angefangenen Stunden erfolgen.</p>`;
-    } else {
-        endHtml = `<div class="roundtrip-leg">
-            <span class="roundtrip-leg__title">Zuhause angekommen</span>
-            <span class="roundtrip-leg__meta">Ankunft ${formatClock(ret.arrivalHome)}</span>
-        </div>`;
+        renderRoundTripCost(route, parkedMinutes, feeText);
     }
+}
 
-    panel.innerHTML = `
-        <div class="routes__head">
-            <h3 class="routes__title">Rückfahrt</h3>
-            <span class="routes__sub">${withCar ? 'Ziel → Parkplatz → Zuhause' : 'Ziel → Zuhause'}</span>
-        </div>
-        ${legsHtml}
-        ${endHtml}
-        ${summaryHtml}
+function renderRoundTripCost(route, parkedMinutes, feeText) {
+    document.querySelectorAll('#roundtrip-cost').forEach(el => el.remove());
+
+    const costPanel = document.getElementById('costPanel');
+    if (!costPanel) return;
+
+    const block = document.createElement('div');
+    block.id = 'roundtrip-cost';
+    block.className = 'roundtrip-cost';
+    block.innerHTML = `
+        <div class="cost-summary"><span>Parkdauer (Hin- und Rückfahrt)</span><b>${formatDuration(parkedMinutes)}</b></div>
+        <div class="cost-summary"><span>Parkgebühr · ${escapeHtml(route.parkingName)}</span><b>${feeText}</b></div>
+        <p class="cost-note">Genau nach Minuten aus dem OSM-Tarif berechnet. Die tatsächliche Abrechnung kann nach angefangenen Stunden erfolgen.</p>
     `;
+    costPanel.appendChild(block);
 }

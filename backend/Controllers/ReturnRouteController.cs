@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using Backend.Models;
 using Backend.Services;
@@ -74,11 +76,19 @@ namespace Backend.Controllers
             {
                 IsWalk = true,
                 FromName = "Haltestelle",
-                ToName = request.DriveMinutes > 0 ? "Parkplatz" : "Zuhause",
+                ToName = request.DriveMinutes > 0 ? "Parkplatz" : "Rückziel",
                 Minutes = endWalk
             });
 
-            var arrivalAtParking = departure.AddMinutes(connection.DurationMinutes + endWalk);
+            // Ankunft aus der echten Ankunftszeit des letzten ÖPNV-Abschnitts, nicht aus einer Dauer
+            var lastTransit = connection.Legs.LastOrDefault(l => !l.IsWalk);
+            DateTimeOffset transitArrival = departure.AddMinutes(connection.DurationMinutes);
+            if (lastTransit != null &&
+                DateTimeOffset.TryParse(lastTransit.Arrival, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedArrival))
+            {
+                transitArrival = parsedArrival;
+            }
+            var arrivalAtParking = transitArrival.AddMinutes(endWalk);
 
             return Ok(new ReturnRouteResult
             {
