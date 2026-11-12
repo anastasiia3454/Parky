@@ -148,20 +148,6 @@ body {
     fill: #aef65c;
 }
 
-/* Gepunktete Verbindungslinie zwischen Start und Ziel */
-.input-group--start {
-    position: relative;
-}
-
-.input-group--start::after {
-    content: "";
-    position: absolute;
-    left: 7px;
-    top: 22px;
-    bottom: -14px;
-    border-left: 2px dotted #737373;
-    pointer-events: none;
-}
 
 .input-group input[type="text"] {
     width: 100%;
