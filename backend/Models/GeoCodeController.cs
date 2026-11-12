@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Adressvorschläge über Photon. Die Anfrage läuft über das Backend,
-    /// dadurch entfallen CORS-Probleme im Browser und die Ergebnisse werden zwischengespeichert.
+    /// Adressvorschläge. Zuerst Photon, bei Fehler oder Timeout Nominatim.
+    /// Die Abfrage läuft über das Backend, dadurch entfallen CORS-Probleme im Browser.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -18,6 +18,8 @@ namespace Backend.Controllers
     {
         private const int MinChars = 3;
         private const int MaxChars = 120;
+        private static readonly TimeSpan ProviderTimeout = TimeSpan.FromSeconds(10);
+        private const string UserAgent = "ParkAndRideApp/1.0 (https://github.com/parkyapp)";
 
         private static readonly HashSet<string> PoiKeys = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -53,35 +55,67 @@ namespace Backend.Controllers
                 return Ok(cached);
             }
 
+            List<string>? labels = null;
+            try
+            {
+                labels = await QueryPhotonAsync(query);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Adressvorschläge] Photon fehlgeschlagen: {ex.Message}");
+            }
+
+            if (labels == null)
+            {
+                try
+                {
+                    labels = await QueryNominatimAsync(query);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Adressvorschläge] Nominatim fehlgeschlagen: {ex.Message}");
+                    return StatusCode(502, "Adressdienste sind gerade nicht erreichbar.");
+                }
+            }
+
+            _cache.Set(cacheKey, labels, TimeSpan.FromHours(6));
+            return Ok(labels);
+        }
+
+        private async Task<List<string>?> QueryPhotonAsync(string query)
+        {
             var client = _clientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(8);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
+            client.Timeout = ProviderTimeout;
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 
             string url = "https://photon.komoot.io/api/?q=" + Uri.EscapeDataString(query)
                 + "&limit=10&lang=de&lat=52.52&lon=13.405&layer=house&layer=street";
 
-            try
-            {
-                using var response = await client.GetAsync(url);
-                if (!response.IsSuccessStatusCode)
-                {
-                    return StatusCode(502, $"Adressdienst antwortet mit {(int)response.StatusCode}.");
-                }
+            using var response = await client.GetAsync(url);
+            if (!response.IsSuccessStatusCode) return null;
 
-                var json = await response.Content.ReadAsStringAsync();
-                var labels = ParseLabels(json);
-
-                _cache.Set(cacheKey, labels, TimeSpan.FromHours(6));
-                return Ok(labels);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FEHLER Adressvorschläge]: {ex.Message}");
-                return StatusCode(502, "Adressdienst nicht erreichbar.");
-            }
+            var json = await response.Content.ReadAsStringAsync();
+            return ParsePhoton(json);
         }
 
-        private static List<string> ParseLabels(string json)
+        private async Task<List<string>> QueryNominatimAsync(string query)
+        {
+            var client = _clientFactory.CreateClient();
+            client.Timeout = ProviderTimeout;
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("de");
+
+            string url = "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=de&limit=10&q="
+                + Uri.EscapeDataString(query);
+
+            using var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            return ParseNominatim(json);
+        }
+
+        private static List<string> ParsePhoton(string json)
         {
             var labels = new List<string>();
             var seen = new HashSet<string>();
@@ -104,10 +138,9 @@ namespace Backend.Controllers
                 string country = Str(props, "countrycode");
                 if (country != "" && !country.Equals("DE", StringComparison.OrdinalIgnoreCase)) continue;
 
-                string osmKey = Str(props, "osm_key");
-                if (PoiKeys.Contains(osmKey)) continue;
+                if (PoiKeys.Contains(Str(props, "osm_key"))) continue;
 
-                string label = FormatLabel(props);
+                string label = FormatPhotonLabel(props);
                 if (label == "" || !seen.Add(label)) continue;
 
                 labels.Add(label);
@@ -116,7 +149,7 @@ namespace Backend.Controllers
             return labels;
         }
 
-        private static string FormatLabel(JsonElement props)
+        private static string FormatPhotonLabel(JsonElement props)
         {
             string street = JoinNonEmpty(" ", Str(props, "street"), Str(props, "housenumber"));
             string name = Str(props, "name");
@@ -126,6 +159,38 @@ namespace Backend.Controllers
             string city = JoinNonEmpty(" ", Str(props, "postcode"), cityPart);
 
             return JoinNonEmpty(", ", place, street, city);
+        }
+
+        private static List<string> ParseNominatim(string json)
+        {
+            var labels = new List<string>();
+            var seen = new HashSet<string>();
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array) return labels;
+
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (!item.TryGetProperty("address", out var addr) || addr.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                string road = Str(addr, "road");
+                string street = JoinNonEmpty(" ", road, Str(addr, "house_number"));
+                string name = Str(item, "name");
+                string place = name != "" && name != road && name != street ? name : "";
+                string cityPart = FirstNonEmpty(
+                    Str(addr, "city"), Str(addr, "town"), Str(addr, "village"), Str(addr, "suburb"));
+                string city = JoinNonEmpty(" ", Str(addr, "postcode"), cityPart);
+
+                string label = JoinNonEmpty(", ", place, street, city);
+                if (label == "" || !seen.Add(label)) continue;
+
+                labels.Add(label);
+            }
+
+            return labels;
         }
 
         private static string Str(JsonElement el, string name)
