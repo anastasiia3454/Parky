@@ -84,7 +84,7 @@
                 </div>
 
                 <form id="routeForm">
-                    <div class="input-group">
+                    <div class="input-group input-group--start">
                         <label for="start">
                             <span class="dot start-dot"></span> Startadresse
                         </label>
@@ -94,7 +94,7 @@
 
                     <div class="input-group">
                         <label for="destination">
-                            <span class="dot dest-dot"></span> Zieladresse
+                            <span class="dot dest-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg></span> Zieladresse
                         </label>
                         <input type="text" id="destination" placeholder="z. B. Friedrichstraße 10, Berlin" required
                             autocomplete="off">
@@ -121,28 +121,33 @@
                         </div>
                         <div class="product-filter-container">
                             <div class="product-filter">
-                                <label class="product-chip product-chip--car">
-                                    <input type="checkbox" id="filterOnlyCar" value="car">
+                                <label class="product-chip product-chip--car" title="Auto">
+                                    <input type="checkbox" id="filterOnlyCar" value="car" aria-label="Auto">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
                                                 xmlns="http://www.w3.org/2000/svg">
                                                 <rect width="100" height="100" fill="#ffffff" rx="12" />
-                                                <path
-                                                    d="M78 68h6c2 0 4-1.5 4-3.5v-10c0-3-2.5-5.5-5.5-6.2C77 47 68 45 68 45s-4.5-5-7.5-8c-1.8-1.5-4-2.5-6.5-2.5H26c-2.5 0-4.7 1-6.5 2.5C16.5 40 12 45 12 45s-9 2-15 3.8C-5.5 49.5-8 52-8 55v10c0 2 2 3.5 4 3.5h6"
-                                                    transform="translate(10, 10) scale(0.8)" fill="none"
-                                                    stroke="#000000" stroke-width="7" stroke-linecap="round"
-                                                    stroke-linejoin="round" />
-                                                <circle cx="30" cy="66" r="8" fill="#000000" />
-                                                <circle cx="70" cy="66" r="8" fill="#000000" />
+                                                <!-- Karosserie -->
+                                                <path fill="#000000"
+                                                    d="M12 64V55c0-4 2.5-6.500 6.500-7.500L27 46l9.500-13.500c1.500-2 3.500-3 6-3h19c2.500 0 4.500 1 6 3L77 46l5.500 1.500c4 1 6.500 3.500 6.500 7.500v9c0 2.500-2 4.500-4.500 4.500H16.500C14 68.500 12 66.500 12 64z" />
+                                                <!-- Fenster -->
+                                                <path fill="#ffffff"
+                                                    d="M35 46l7.500-11h6.500v11zM55 46V35h6.500l7.500 11z" />
+                                                <!-- Räder -->
+                                                <circle cx="30" cy="68" r="11" fill="#ffffff" />
+                                                <circle cx="70" cy="68" r="11" fill="#ffffff" />
+                                                <circle cx="30" cy="68" r="8" fill="#000000" />
+                                                <circle cx="70" cy="68" r="8" fill="#000000" />
+                                                <circle cx="30" cy="68" r="3" fill="#ffffff" />
+                                                <circle cx="70" cy="68" r="3" fill="#ffffff" />
                                             </svg>
                                         </div>
-                                        <span class="chip-label">Auto</span>
                                     </div>
                                 </label>
                                 <!-- U-Bahn Logo -->
-                                <label class="product-chip">
-                                    <input type="checkbox" value="subway" checked>
+                                <label class="product-chip" title="U-Bahn">
+                                    <input type="checkbox" value="subway" checked aria-label="U-Bahn">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -153,13 +158,12 @@
                                                     text-anchor="middle">U</text>
                                             </svg>
                                         </div>
-                                        <span class="chip-label">U-Bahn</span>
                                     </div>
                                 </label>
 
                                 <!-- S-Bahn Logo -->
-                                <label class="product-chip">
-                                    <input type="checkbox" value="suburban" checked>
+                                <label class="product-chip" title="S-Bahn">
+                                    <input type="checkbox" value="suburban" checked aria-label="S-Bahn">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -170,13 +174,12 @@
                                                     text-anchor="middle">S</text>
                                             </svg>
                                         </div>
-                                        <span class="chip-label">S-Bahn</span>
                                     </div>
                                 </label>
 
                                 <!-- Tram Logo -->
-                                <label class="product-chip">
-                                    <input type="checkbox" value="tram" checked>
+                                <label class="product-chip" title="Tram">
+                                    <input type="checkbox" value="tram" checked aria-label="Tram">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -187,13 +190,12 @@
                                                     text-anchor="middle">Tram</text>
                                             </svg>
                                         </div>
-                                        <span class="chip-label">Tram</span>
                                     </div>
                                 </label>
 
                                 <!-- Bus Logo -->
-                                <label class="product-chip">
-                                    <input type="checkbox" value="bus" checked>
+                                <label class="product-chip" title="Bus">
+                                    <input type="checkbox" value="bus" checked aria-label="Bus">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -204,13 +206,12 @@
                                                     letter-spacing="-1">BUS</text>
                                             </svg>
                                         </div>
-                                        <span class="chip-label">Bus</span>
                                     </div>
                                 </label>
 
                                 <!-- Regional Logo -->
-                                <label class="product-chip">
-                                    <input type="checkbox" value="regional,regionalExpress" checked>
+                                <label class="product-chip" title="Regional">
+                                    <input type="checkbox" value="regional,regionalExpress" checked aria-label="Regional">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -221,13 +222,12 @@
                                                     text-anchor="middle">REG</text>
                                             </svg>
                                         </div>
-                                        <span class="chip-label">Regional</span>
                                     </div>
                                 </label>
 
                                 <!-- Fernverkehr Logo -->
-                                <label class="product-chip">
-                                    <input type="checkbox" value="nationalExpress,national" checked>
+                                <label class="product-chip" title="Fernverkehr">
+                                    <input type="checkbox" value="nationalExpress,national" checked aria-label="Fernverkehr">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -238,7 +238,6 @@
                                                     text-anchor="middle">ICE</text>
                                             </svg>
                                         </div>
-                                        <span class="chip-label">Fernverkehr</span>
                                     </div>
                                 </label>
                             </div>
