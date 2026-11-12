@@ -301,6 +301,13 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
     }
 }
 
+function routeTimeRange(route) {
+    if (!route._start) route._start = new Date();
+    const fmt = (d) => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const end = new Date(route._start.getTime() + Math.max(0, Math.round(Number(route.totalMinutes) || 0)) * 60000);
+    return `${fmt(route._start)} → ${fmt(end)} Uhr`;
+}
+
 function formatDuration(totalMinutes) {
     const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
     const h = Math.floor(m / 60);
@@ -345,7 +352,7 @@ function buildRouteCard(route, index, isBest) {
     card.innerHTML = `
         <header class="route-card__head">
             <div>
-                <span class="route-card__option">Option ${index + 1}</span>
+                <span class="route-card__option">${routeTimeRange(route)}</span>
                 <span class="route-card__place">${escapeHtml(route.parkingName)}</span>
             </div>
             <div class="route-card__total">
@@ -766,7 +773,7 @@ function buildRouteDetail(route, index, isBest) {
     wrap.innerHTML = `
         <header class="route-detail__head">
             <div>
-                <h4 class="route-detail__title">Option ${index + 1}: Routendetails</h4>
+                <h4 class="route-detail__title">${routeTimeRange(route)}</h4>
                 <span class="route-detail__sub">${escapeHtml(route.parkingName || 'P+R Parkplatz')}</span>
                 ${best}
                 ${filterNote}
@@ -843,7 +850,7 @@ function renderCostPanel(routes) {
         return `
             <li class="cost-item">
                 <div class="cost-item__info">
-                    <b>Option ${idx + 1}</b>
+                    <b>${routeTimeRange(route)}</b>
                     <span>${escapeHtml(route.parkingName)}</span>
                     ${note ? `<small>${note}</small>` : ''}
                 </div>
