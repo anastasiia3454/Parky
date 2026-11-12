@@ -1,50 +1,18 @@
 (function () {
-    const PHOTON_URL = 'https://photon.komoot.io/api/';
-    const BIAS = { lat: 52.52, lon: 13.405 };
+    const API_BASE = 'https://parky-luln.onrender.com';
     const MIN_CHARS = 3;
     const DEBOUNCE_MS = 150;
-    const LIMIT = 10;
-    const POI_KEYS = ['amenity', 'shop', 'tourism', 'leisure', 'office', 'craft', 'healthcare', 'historic', 'emergency', 'natural', 'sport', 'aeroway', 'man_made'];
     const cache = new Map();
 
-    function formatLabel(props) {
-        const street = [props.street, props.housenumber].filter(Boolean).join(' ');
-        const place = props.name && props.name !== props.street && props.name !== street ? props.name : '';
-        const city = [props.postcode, props.city || props.town || props.village || props.district].filter(Boolean).join(' ');
-        return [place, street, city].filter(Boolean).join(', ');
-    }
-
+    // Vorschläge kommen vom Backend (Photon wird dort abgefragt, siehe GeocodeController)
     async function fetchSuggestions(query, signal) {
         const key = query.toLowerCase();
         if (cache.has(key)) return cache.get(key);
 
-        const params = new URLSearchParams({
-            q: query,
-            limit: String(LIMIT),
-            lang: 'de',
-            lat: String(BIAS.lat),
-            lon: String(BIAS.lon)
-        });
-        params.append('layer', 'house');
-        params.append('layer', 'street');
+        const response = await fetch(`${API_BASE}/api/Geocode/suggest?q=${encodeURIComponent(query)}`, { signal });
+        if (!response.ok) throw new Error(`Adressvorschläge: HTTP ${response.status}`);
 
-        const response = await fetch(`${PHOTON_URL}?${params}`, { signal });
-        if (!response.ok) throw new Error(`Photon ${response.status}`);
-
-        const data = await response.json();
-        const seen = new Set();
-        const labels = [];
-
-        (data.features || []).forEach(feature => {
-            const props = feature.properties || {};
-            if (props.countrycode && props.countrycode.toUpperCase() !== 'DE') return;
-            if (POI_KEYS.includes(props.osm_key)) return;
-            const label = formatLabel(props);
-            if (!label || seen.has(label)) return;
-            seen.add(label);
-            labels.push(label);
-        });
-
+        const labels = await response.json();
         cache.set(key, labels);
         return labels;
     }

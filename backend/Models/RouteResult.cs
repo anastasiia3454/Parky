@@ -33,8 +33,11 @@ public class RouteResult
     /// <summary>Dauer des Fußwegs von der Ausstiegshaltestelle zum Ziel</summary>
     public int WalkingMinutes { get; set; }
 
+    /// <summary>Fußweg vom Startpunkt zur Einstiegshaltestelle (nur bei Verbindungen ohne Auto)</summary>
+    public int StartWalkingMinutes { get; set; }
+
     /// <summary>Automatisch berechnete Gesamtdauer aller Reiseabschnitte</summary>
-    public int TotalMinutes => DriveMinutes + ParkingBufferMinutes + TransitMinutes + WalkingMinutes;
+    public int TotalMinutes => DriveMinutes + ParkingBufferMinutes + StartWalkingMinutes + TransitMinutes + WalkingMinutes;
 
     /// <summary>Kodierte Linie für die Autofahrt auf der Karte</summary>
     public string PolylineDrive { get; set; } = string.Empty;

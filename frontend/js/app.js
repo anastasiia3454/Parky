@@ -321,7 +321,7 @@ function buildRouteCard(route, index, isBest) {
         { key: 'drive', label: 'Auto', minutes: num(route.driveMinutes) },
         { key: 'park', label: 'Parken', minutes: num(route.parkingBufferMinutes) },
         { key: 'transit', label: 'ÖPNV', minutes: num(route.transitMinutes) },
-        { key: 'walk', label: 'Fußweg', minutes: num(route.walkingMinutes) }
+        { key: 'walk', label: 'Fußweg', minutes: num(route.walkingMinutes) + num(route.startWalkingMinutes) }
     ];
 
     const bar = segments
@@ -330,6 +330,7 @@ function buildRouteCard(route, index, isBest) {
         .join('');
 
     const legend = segments
+        .filter(s => hasDriveLeg(route) || (s.key !== 'drive' && s.key !== 'park'))
         .map(s => `
             <li>
                 <i class="route-card__dot route-card__seg--${s.key}"></i>
@@ -412,32 +413,55 @@ function buildDirectCarCard(directCarRoute) {
     return card;
 }
 
+// Verkehrsmittel, die sich bei der API-Auswahl überschneiden (z.B. Fernzug / Regional)
+const PRODUCT_ALIASES = {
+    express: ['nationalExpress', 'national'],
+    regional: ['regional', 'regionalExpress']
+};
+
+// Prüft, ob eine Route genau den gewählten Verkehrsmitteln entspricht
+function routeMatchesSelection(route, selectedProducts) {
+    if (route.matchesProductFilter === false) return false;
+    if (route.matchesProductFilter === true) return true;
+
+    const transit = (Array.isArray(route.legs) ? route.legs : []).filter(l => l && !l.isWalk);
+    return transit.every(l =>
+        selectedProducts.includes(l.product)
+        || (PRODUCT_ALIASES[l.product] || []).some(p => selectedProducts.includes(p))
+    );
+}
+
+// Route mit Auto zum Parkplatz
+function hasDriveLeg(route) {
+    return Number(route.driveMinutes) > 0;
+}
+
+// Gleicher Parkplatz + gleiche ÖPNV-Verbindung (Linien, Ein-/Ausstieg) = ähnliche Route
+function routeSignature(route) {
+    const transit = (Array.isArray(route.legs) ? route.legs : [])
+        .filter(l => l && !l.isWalk)
+        .map(l => [l.product, l.lineName, l.fromName, l.toName].join('|'));
+    return [route.parkingName, ...transit].join('#');
+}
+
+// Behält pro Signatur nur die schnellste Route, die Reihenfolge bleibt erhalten
+function removeSimilarRoutes(routes) {
+    const fastest = new Map();
+    routes.forEach(r => {
+        const key = routeSignature(r);
+        const cur = fastest.get(key);
+        if (!cur || Number(r.totalMinutes) < Number(cur.totalMinutes)) fastest.set(key, r);
+    });
+    return routes.filter(r => fastest.get(routeSignature(r)) === r);
+}
+
 async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
+    // Direktfahrt nur, wenn "Auto" im Filter aktiv ist
+    const showCar = isCarFilterChecked() && !!windowDirectCarRoute;
+    // P+R-Routen ausblenden, wenn nur "Auto" gewählt ist
+    const showPR = !isCarOnlyFilter();
+
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000);
-        const response = await fetch('https://parky-luln.onrender.com/api/Route/calculate', {
-            signal: controller.signal,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                originLat: originLat,
-                originLon: originLon,
-                targetLat: targetLat,
-                targetLon: targetLon,
-                departureTime: new Date().toISOString(),
-                products: getSelectedProducts()
-            })
-        });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            console.error("Fehler bei der Anfrage an den RouteController");
-            showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
-            return;
-        }
-
-        const routes = await response.json();
         const resultsDiv = document.getElementById('results');
 
         const existingContainer = document.getElementById('intermodal-results-container');
@@ -452,8 +476,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 <span class="routes__sub">Auto, ÖPNV und Fußweg</span>
             </div>
         `;
-
-        const cards = [];
 
         // Zentrale Funktion, die alle Auswahl-Klassen und Buttons im Container zuverlässig zurücksetzt
         const clearAllSelections = () => {
@@ -489,69 +511,132 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
         };
 
-        if (routes && routes.length > 0) {
-            const bestIndex = routes.reduce(
+        // P+R-Routen laden (nur wenn sie angezeigt werden sollen)
+        let routes = [];
+        let fetchFailed = false;
+        if (showPR) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 90000);
+            try {
+                const response = await fetch('https://parky-luln.onrender.com/api/Route/calculate', {
+                    signal: controller.signal,
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        originLat: originLat,
+                        originLon: originLon,
+                        targetLat: targetLat,
+                        targetLon: targetLon,
+                        departureTime: new Date().toISOString(),
+                        products: getSelectedProducts()
+                    })
+                });
+
+                if (response.ok) {
+                    routes = await response.json();
+                } else {
+                    fetchFailed = true;
+                    console.error("Fehler bei der Anfrage an den RouteController");
+                    showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
+                }
+            } catch (err) {
+                fetchFailed = true;
+                console.error("Fehler bei der intermodalen Routenberechnung:", err);
+                showToast('Die Gesamtrouten konnten nicht berechnet werden.', { type: 'error', duration: 6000 });
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+        if (!Array.isArray(routes)) routes = [];
+
+        // Routen mit Auto zum Parkplatz nur anzeigen, wenn der Filter "Auto" aktiv ist
+        if (showPR && !isCarFilterChecked()) {
+            routes = routes.filter(r => !hasDriveLeg(r));
+        }
+
+        // Nur Routen anzeigen, die der Verkehrsmittel-Auswahl entsprechen.
+        // Gibt es keine passende Route, wird benachrichtigt und die übrigen Optionen gezeigt.
+        const selectedProducts = getSelectedProducts();
+        if (showPR && selectedProducts && routes.length > 0) {
+            const matching = routes.filter(r => routeMatchesSelection(r, selectedProducts));
+            if (matching.length > 0) {
+                routes = matching;
+            } else {
+                showToast('Keine Route mit der gewählten Verkehrsart gefunden. Andere Optionen werden angezeigt.', { type: 'warning', duration: 6000 });
+            }
+        }
+
+        // Ähnliche Optionen ausblenden
+        if (routes.length > 1) routes = removeSimilarRoutes(routes);
+
+        const hasRoutes = routes.length > 0;
+
+        // Direktfahrt-Karte (nur bei aktivem Auto-Filter)
+        let directCard = null;
+        if (showCar) {
+            directCard = buildDirectCarCard(windowDirectCarRoute);
+            directCard.addEventListener('click', () => {
+                clearAllSelections();
+                container.querySelectorAll(':scope > .route-detail').forEach(el => el.remove());
+
+                directCard.classList.add('is-selected', 'is-selected--car');
+                directCard.querySelector('.route-card__btn').textContent = 'Ausgewählt';
+
+                if (typeof parkingMarkers !== 'undefined') {
+                    parkingMarkers.forEach(m => map.removeLayer(m));
+                }
+                if (typeof drawDirectCarRoute === 'function') {
+                    drawDirectCarRoute(originLat, originLon, targetLat, targetLon);
+                }
+            });
+            container.appendChild(directCard);
+        }
+
+        // Jede P+R-Route wird angezeigt
+        const cards = [];
+        let bestIndex = -1;
+        if (hasRoutes) {
+            bestIndex = routes.reduce(
                 (best, r, i) => (Number(r.totalMinutes) < Number(routes[best].totalMinutes) ? i : best),
                 0
             );
-
             routes.forEach((route, idx) => {
                 const card = buildRouteCard(route, idx, idx === bestIndex);
                 card.addEventListener('click', () => selectRoute(route, card));
                 cards.push(card);
                 container.appendChild(card);
             });
+        }
 
-            resultsDiv.appendChild(container);
-            renderCostPanel(routes);
-
-            // --- Direkt-Auto Minuten berechnen ---
-            let directMinutes = 9999;
-            if (windowDirectCarRoute) {
-                const rawSec = windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0;
-                directMinutes = Math.round(rawSec / 60);
-            }
-
-            console.log("=== PARKY ROUTEN-CHECK ===");
-            console.log("Direkt-Auto Minuten:", directMinutes);
-            console.log("Beste P+R Minuten:", Number(routes[bestIndex].totalMinutes));
-
-            let directCard = null;
-            // Regel: Direktfahrt nur anzeigen, WENN sie existiert UND maximal 15 Minuten dauert!
-            if (windowDirectCarRoute && directMinutes <= 15) {
-                directCard = buildDirectCarCard(windowDirectCarRoute);
-                directCard.addEventListener('click', () => {
-                    clearAllSelections();
-                    container.querySelectorAll(':scope > .route-detail').forEach(el => el.remove());
-                    
-                    directCard.classList.add('is-selected', 'is-selected--car');
-                    directCard.querySelector('.route-card__btn').textContent = 'Ausgewählt';
-
-                    if (typeof parkingMarkers !== 'undefined') {
-                        parkingMarkers.forEach(m => map.removeLayer(m));
-                    }
-                    if (typeof drawDirectCarRoute === 'function') {
-                        drawDirectCarRoute(originLat, originLon, targetLat, targetLon);
-                    }
-                });
-                container.prepend(directCard);
-            }
-
-            // --- Automatische Auswahl ---
-            const bestPAndRMinutes = Number(routes[bestIndex].totalMinutes);
-            const preferDirect = directCard && (directMinutes <= bestPAndRMinutes || bestPAndRMinutes > directMinutes * 1.2);
-
-            if (AUTO_SELECT_BEST_ROUTE) {
-                if (preferDirect && directCard) {
-                    console.log("--> Kurze Autofahrt (<= 15 Min): Wähle automatisch die Direktfahrt!");
-                    directCard.click();
-                } else {
-                    console.log("--> Autofahrt > 15 Min oder P+R besser: Zeige und wähle P+R Routen.");
-                    selectRoute(routes[bestIndex], cards[bestIndex], false);
+        if (!directCard && !hasRoutes) {
+            if (!fetchFailed) {
+                let msg = 'Keine Direktfahrt mit dem Auto verfügbar.';
+                if (showPR) {
+                    msg = isCarFilterChecked()
+                        ? 'Keine passenden ÖPNV-Routen für diese Parkplätze gefunden.'
+                        : 'Keine ÖPNV-Route gefunden. Für Routen mit Auto bitte den Filter „Auto“ aktivieren.';
                 }
+                showToast(msg, { type: 'warning', duration: 6000 });
             }
-        } else {
-            showToast('Keine passenden ÖPNV-Routen für diese Parkplätze gefunden.', { type: 'warning', duration: 6000 });
+            return;
+        }
+
+        resultsDiv.appendChild(container);
+        if (hasRoutes) renderCostPanel(routes.filter(hasDriveLeg));
+
+        if (AUTO_SELECT_BEST_ROUTE) {
+            const directMinutes = directCard
+                ? Math.round(Number(windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0) / 60)
+                : Infinity;
+            const bestPAndRMinutes = hasRoutes ? Number(routes[bestIndex].totalMinutes) : Infinity;
+            const preferDirect = directCard
+                && (!hasRoutes || directMinutes <= bestPAndRMinutes || bestPAndRMinutes > directMinutes * 1.2);
+
+            if (preferDirect) {
+                directCard.click();
+            } else {
+                selectRoute(routes[bestIndex], cards[bestIndex], false);
+            }
         }
     } catch (err) {
         console.error("Fehler bei der intermodalen Routenberechnung:", err);
@@ -622,14 +707,14 @@ function buildRouteDetail(route, index, isBest) {
     const steps = document.createElement('ul');
     steps.className = 'route-detail__steps';
 
-    steps.appendChild(detailStep('drive', null, {
+    if (hasDriveLeg(route)) steps.appendChild(detailStep('drive', null, {
         title: 'Mit dem Auto zum P+R',
         meta: `Start → Parkplatz`,
         body: stopRow('Parkplatz', route.parkingName || 'P+R Parkplatz'),
         time: `${m(route.driveMinutes)} Min.`
     }));
 
-    steps.appendChild(detailStep('park', null, {
+    if (hasDriveLeg(route)) steps.appendChild(detailStep('park', null, {
         title: 'Auto abstellen',
         time: `${m(route.parkingBufferMinutes)} Min.`
     }));
@@ -801,7 +886,12 @@ document.querySelectorAll('.sheet-tab').forEach(tab => {
 
 document.getElementById('btnReset').addEventListener('click', () => {
     const form = document.getElementById('routeForm');
+    // Verkehrsmittel-Auswahl merken und nach dem Reset wiederherstellen
+    const productStates = new Map();
+    document.querySelectorAll('.product-filter input[type="checkbox"]')
+        .forEach(box => productStates.set(box, box.checked));
     form.reset();
+    productStates.forEach((checked, box) => { box.checked = checked; });
     document.getElementById('weightSpeed').dispatchEvent(new Event('input'));
 
     clearMapResults();
@@ -826,8 +916,18 @@ document.getElementById('btnReset').addEventListener('click', () => {
     document.getElementById('start').focus();
 });
 
+function isCarFilterChecked() {
+    const car = document.getElementById('filterOnlyCar');
+    return !!(car && car.checked);
+}
+
+// Nur "Auto" ausgewählt (kein ÖPNV-Verkehrsmittel) -> nur Direktfahrt anzeigen
+function isCarOnlyFilter() {
+    return isCarFilterChecked() && getSelectedProducts() === null;
+}
+
 function getSelectedProducts() {
-    const boxes = document.querySelectorAll('.product-filter input[type="checkbox"]:checked');
+    const boxes = document.querySelectorAll('.product-filter input[type="checkbox"]:checked:not(#filterOnlyCar)');
     const values = [];
     boxes.forEach(box => box.value.split(',').forEach(v => values.push(v.trim())));
     return values.length === 0 ? null : values;
@@ -837,6 +937,7 @@ const btnDeutschlandticket = document.getElementById('btnDeutschlandticket');
 if (btnDeutschlandticket) {
     btnDeutschlandticket.addEventListener('click', () => {
         document.querySelectorAll('.product-filter input[type="checkbox"]').forEach(box => {
+            if (box.id === 'filterOnlyCar') { box.checked = false; return; }
             box.checked = !box.value.split(',').some(v => v.trim() === 'nationalExpress' || v.trim() === 'national');
         });
     });

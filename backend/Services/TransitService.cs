@@ -46,6 +46,55 @@ namespace Backend.Services
             return stop;
         }
 
+        // Mehrere nahe Haltestellen (ohne Cache), für Verbindungen ohne Auto
+        public async Task<List<TransitStop>> GetNearbyStopsAsync(double Lat, double Lon, int max)
+        {
+            var stops = new List<TransitStop>();
+            try
+            {
+                string url = $"https://v6.vbb.transport.rest/locations/nearby?latitude={Lat.ToString(CultureInfo.InvariantCulture)}&longitude={Lon.ToString(CultureInfo.InvariantCulture)}&results=8&distance=2000&stops=true&poi=false";
+                using var response = await _httpClient.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return stops;
+
+                using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                if (doc.RootElement.ValueKind != JsonValueKind.Array) return stops;
+
+                foreach (var location in doc.RootElement.EnumerateArray())
+                {
+                    if (stops.Count >= max) break;
+                    if (location.ValueKind != JsonValueKind.Object) continue;
+
+                    string type = StringOf(location, "type");
+                    if (type != "stop" && type != "station") continue;
+
+                    string id = StringOf(location, "id");
+                    if (id == "" || stops.Exists(s => s.Id == id)) continue;
+
+                    double stopLat = Lat;
+                    double stopLon = Lon;
+                    if (TryGetObject(location, "location", out var loc))
+                    {
+                        if (loc.TryGetProperty("latitude", out var la) && la.ValueKind == JsonValueKind.Number) stopLat = la.GetDouble();
+                        if (loc.TryGetProperty("longitude", out var lo) && lo.ValueKind == JsonValueKind.Number) stopLon = lo.GetDouble();
+                    }
+
+                    string name = StringOf(location, "name");
+                    stops.Add(new TransitStop
+                    {
+                        Id = id,
+                        Name = name == "" ? "Haltestelle" : name,
+                        Lat = stopLat,
+                        Lon = stopLon
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DEBUG] Fehler bei Haltestellensuche (mehrere): {ex.Message}");
+            }
+            return stops;
+        }
+
         private async Task<TransitStop?> FetchNearbyStopAsync(double Lat, double Lon)
         {
             try
