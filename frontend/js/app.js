@@ -1047,7 +1047,7 @@ async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon
     panel.innerHTML = `
         <div class="routes__head">
             <h3 class="routes__title">Rückfahrt</h3>
-            <span class="routes__sub">${withCar ? 'Ziel → Parkplatz → Rückziel' : 'Ziel → Rückziel'}</span>
+            <span class="routes__sub">${withCar ? 'Ziel → Parkplatz → Startpunkt' : 'Ziel → Startpunkt'}</span>
         </div>
         <p class="empty-state">Rückfahrt wird berechnet …</p>
     `;
@@ -1107,13 +1107,23 @@ function renderRoundTripPanel(panel, route, ret) {
     const m = (v) => Math.max(0, Math.round(Number(v) || 0));
     const totalMinutes = (Date.parse(ret.arrivalHome) - Date.parse(ret.departureFromTarget)) / 60000;
 
+    // Wartezeit: vom gewünschten Abfahrtszeitpunkt am Ziel bis zur ersten ÖPNV-Abfahrt
+    const firstWalkMinutes = legs[0] && legs[0].isWalk ? m(legs[0].minutes) : 0;
+    const firstTransit = legs.find(l => !l.isWalk && l.departure);
+    let waitMinutes = 0;
+    if (firstTransit) {
+        waitMinutes = Math.round(
+            (Date.parse(firstTransit.departure) - Date.parse(ret.departureFromTarget)) / 60000 - firstWalkMinutes
+        );
+    }
+
     // Gleicher Aufbau wie die Routendetails der Hinfahrt
     panel.className = 'route-detail roundtrip-section';
     panel.innerHTML = `
         <header class="route-detail__head">
             <div>
                 <h4 class="route-detail__title">Rückfahrt: Routendetails</h4>
-                <span class="route-detail__sub">${withCar ? 'Ziel → Parkplatz → Rückziel' : 'Ziel → Rückziel'}</span>
+                <span class="route-detail__sub">${withCar ? 'Ziel → Parkplatz → Startpunkt' : 'Ziel → Startpunkt'}</span>
             </div>
             <div class="route-detail__total">
                 ${formatDuration(totalMinutes)}
@@ -1131,11 +1141,20 @@ function renderRoundTripPanel(panel, route, ret) {
         if (leg.isWalk) {
             const isLast = i === legs.length - 1;
             steps.appendChild(detailStep('walk', null, {
-                title: isLast ? (withCar ? 'Zu Fuß zum Auto' : 'Zu Fuß nach Rückziel') : 'Zu Fuß zur Haltestelle',
+                title: isLast ? (withCar ? 'Zu Fuß zum Auto' : 'Zu Fuß zum Startpunkt') : 'Zu Fuß zur Haltestelle',
                 meta: `${escapeHtml(leg.fromName || '')}${leg.toName ? ' → ' + escapeHtml(leg.toName) : ''}`,
                 time: `${minutes} Min.`
             }));
             return;
+        }
+
+        // Wartezeit als eigener Abschnitt vor der ersten ÖPNV-Fahrt
+        if (leg === firstTransit && waitMinutes > 0) {
+            steps.appendChild(detailStep('park', null, {
+                title: 'Wartezeit',
+                meta: `bis Abfahrt um ${formatClock(leg.departure)}`,
+                time: formatDuration(waitMinutes)
+            }));
         }
 
         const color = productColor(leg.product);
@@ -1155,14 +1174,14 @@ function renderRoundTripPanel(panel, route, ret) {
 
     if (withCar) {
         steps.appendChild(detailStep('drive', null, {
-            title: 'Mit dem Auto nach Rückziel',
-            meta: 'Parkplatz → Rückziel',
+            title: 'Mit dem Auto zum Startpunkt',
+            meta: 'Parkplatz → Startpunkt',
             time: `${m(ret.driveHomeMinutes)} Min.`
         }));
     }
 
     steps.appendChild(detailStep('park', null, {
-        title: 'Ziel erreicht',
+        title: 'Ankunft am Startpunkt',
         time: formatClock(ret.arrivalHome)
     }));
 

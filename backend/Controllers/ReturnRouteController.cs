@@ -11,7 +11,7 @@ namespace Backend.Controllers
 {
     /// <summary>
     /// Berechnet die Rückfahrt: Fußweg zur Haltestelle am Ziel, ÖPNV bis zum Parkplatz,
-    /// dann mit dem Auto nach Hause. Die Fahrzeit mit dem Auto entspricht der Hinfahrt.
+    /// dann mit dem Auto zum Startpunkt. Die Fahrzeit mit dem Auto entspricht der Hinfahrt.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -76,7 +76,7 @@ namespace Backend.Controllers
             {
                 IsWalk = true,
                 FromName = "Haltestelle",
-                ToName = request.DriveMinutes > 0 ? "Parkplatz" : "Rückziel",
+                ToName = request.DriveMinutes > 0 ? "Parkplatz" : "Startpunkt",
                 Minutes = endWalk
             });
 
