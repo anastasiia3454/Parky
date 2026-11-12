@@ -342,7 +342,8 @@ async function drawFullIntermodalRoute(
     destLat, destLon,
     polylineTransit = null,
     targetStopLat = null,
-    targetStopLon = null
+    targetStopLon = null,
+    hasDrive = true
 ) {
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
@@ -357,7 +358,9 @@ async function drawFullIntermodalRoute(
         return;
     }
 
-    const driveUrl = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
+    // Ohne Auto ist der erste Abschnitt ein Fußweg zur Haltestelle
+    const firstProfile = hasDrive ? 'driving' : 'foot';
+    const driveUrl = `https://router.project-osrm.org/route/v1/${firstProfile}/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
 
     try {
         const driveRes = await fetch(driveUrl);
@@ -365,15 +368,13 @@ async function drawFullIntermodalRoute(
 
         if (driveData.routes && driveData.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
-                style: {
-                    color: '#00bfff',
-                    weight: 5,
-                    opacity: 0.9
-                }
+                style: hasDrive
+                    ? { color: '#00bfff', weight: 5, opacity: 0.9 }
+                    : { color: '#f97316', weight: 4, opacity: 0.9, dashArray: '5, 8' }
             }).addTo(map);
         }
     } catch (err) {
-        console.error("Fehler beim Laden der Auto-Route:", err);
+        console.error(hasDrive ? "Fehler beim Laden der Auto-Route:" : "Fehler beim Laden des Fußwegs zur Haltestelle:", err);
     }
 
     if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
