@@ -1034,30 +1034,35 @@ async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon
     if (!toggle || !toggle.checked) return;
     const withCar = hasDriveLeg(route);
 
-    const returnInput = document.getElementById('returnTime');
-    if (!returnInput || !returnInput.value) {
-        showToast('Bitte eine Rückfahrtzeit eingeben.', { type: 'warning', duration: 5000 });
-        return;
-    }
-
-    const returnAt = new Date(returnInput.value);
-    const outboundArrival = Date.now() + Number(route.totalMinutes) * 60000;
-    if (returnAt.getTime() < outboundArrival) {
-        showToast('Die Rückfahrt muss nach der Ankunft am Ziel liegen.', { type: 'warning', duration: 6000 });
-        return;
-    }
-
     const panel = document.createElement('section');
     panel.id = 'round-trip-panel';
     panel.className = 'routes';
     panel.innerHTML = `
         <div class="routes__head">
             <h3 class="routes__title">Rückfahrt</h3>
-            <span class="routes__sub">Ziel → Parkplatz → Zuhause</span>
+            <span class="routes__sub">${withCar ? 'Ziel → Parkplatz → Zuhause' : 'Ziel → Zuhause'}</span>
         </div>
         <p class="empty-state">Rückfahrt wird berechnet …</p>
     `;
     document.getElementById('results').appendChild(panel);
+
+    const setNote = text => {
+        const note = panel.querySelector('.empty-state');
+        if (note) note.textContent = text;
+    };
+
+    const returnInput = document.getElementById('returnTime');
+    if (!returnInput || !returnInput.value) {
+        setNote('Bitte eine Rückfahrtzeit eingeben.');
+        return;
+    }
+
+    const returnAt = new Date(returnInput.value);
+    const outboundArrival = Date.now() + Number(route.totalMinutes) * 60000;
+    if (returnAt.getTime() < outboundArrival) {
+        setNote('Die Rückfahrt muss nach der Ankunft am Ziel liegen.');
+        return;
+    }
 
     try {
         const response = await fetch('https://parky-luln.onrender.com/api/ReturnRoute/calculate', {
@@ -1085,8 +1090,7 @@ async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon
         renderRoundTripPanel(panel, route, ret);
     } catch (err) {
         console.error("Rückfahrt:", err);
-        const note = panel.querySelector('.empty-state');
-        if (note) note.textContent = `Rückfahrt nicht möglich: ${err.message}`;
+        setNote(`Rückfahrt nicht möglich: ${err.message}`);
     }
 }
 
