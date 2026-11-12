@@ -63,6 +63,17 @@
             setOpen(false);
         }
 
+        // Hinweis statt stiller Fehler, damit sichtbar ist, warum keine Vorschläge kommen
+        function showNote(text) {
+            list.innerHTML = '';
+            items = [];
+            const li = document.createElement('li');
+            li.className = 'suggest-item suggest-note';
+            li.textContent = text;
+            list.appendChild(li);
+            setOpen(true);
+        }
+
         function render(labels) {
             list.innerHTML = '';
             items = labels.map((label, i) => {
@@ -102,7 +113,7 @@
                 } catch (err) {
                     if (err.name !== 'AbortError') {
                         console.error('Adressvorschläge:', err);
-                        setOpen(false);
+                        showNote('Adressvorschläge gerade nicht verfügbar');
                     }
                 }
             }, DEBOUNCE_MS);
