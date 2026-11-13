@@ -662,13 +662,13 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
 }
 
 const PRODUCT_COLORS = {
-    subway: '#2864a6',
-    suburban: '#008d4f',
-    tram: '#d82d1f',
-    bus: '#a2107c',
-    ferry: '#0e7490',
-    regional: '#1f2937',
-    express: '#1f2937'
+    subway: '#3b82f6',
+    suburban: '#22c55e',
+    tram: '#f43f5e',
+    bus: '#c084fc',
+    ferry: '#2dd4bf',
+    regional: '#e5e7eb',
+    express: '#fde047'
 };
 
 const PRODUCT_LABELS = {
@@ -1316,7 +1316,7 @@ async function colorRouteByTraffic(fromLat, fromLon, toLat, toLon) {
 
             const layer = L.polyline(segment, {
                 color: trafficColor(ratio),
-                weight: 6,
+                weight: 5,
                 opacity: 0.95,
                 lineCap: 'round'
             }).addTo(map);
