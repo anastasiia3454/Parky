@@ -766,3 +766,8 @@ input[type="range"] {
 .sheet-tabs[hidden] {
     display: none !important;
 }
+
+/* Start/Ziel-Zusammenfassung in der Seitenleiste ausblenden */
+#sheetSummary {
+    display: none !important;
+}
