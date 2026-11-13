@@ -182,6 +182,9 @@ document.addEventListener('DOMContentLoaded', renderRecentSearches);
 const AUTO_SELECT_BEST_ROUTE = true;
 let windowDirectCarRoute = null;
 
+// Wird bei jeder neuen Suche und beim Zurücksetzen erhöht. Alte Suchen verwerfen ihre Ergebnisse.
+let searchSession = 0;
+
 document.getElementById('routeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -197,6 +200,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     const costPanelReset = document.getElementById('costPanel');
     if (costPanelReset) costPanelReset.innerHTML = '';
     clearMapResults();
+    const session = ++searchSession;
     if (submitBtn) submitBtn.classList.add('loading');
 
     const status = showToast('Adresse wird gesucht …', { type: 'info', loading: true });
@@ -204,11 +208,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     try {
         const startCoords = await geocodeAddress(startText);
         const destCoords = await geocodeAddress(destText);
-
-        resultsDiv.innerHTML = `
-            <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
-            <p><b>Ziel:</b> ${escapeHtml(destCoords.displayName)}</p>
-        `;
+        if (session !== searchSession) { status.close(); return; }
 
         status.update('Suche optimale P+R-Parkplätze …');
 
@@ -225,6 +225,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             destCoords.lon,
             sliderValue
         );
+        if (session !== searchSession) { clearMapResults(); status.close(); return; }
 
         if (parkings && parkings.length > 0) {
             const n = parkings.length;
@@ -256,9 +257,24 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     }
 });
 
+// Parkgebühren-Tab nur zeigen, wenn eine Rückfahrt mit Parkdaten vorliegt
+function setCostsTabVisible(visible) {
+    const tab = document.querySelector('.sheet-tab[data-tab="costs"]');
+    if (!tab) return;
+    tab.hidden = !visible;
+    // Ohne Parkgebühren-Tab füllt „Routen“ die ganze Breite aus
+    const tabs = document.querySelector('.sheet-tabs');
+    if (tabs) tabs.style.gridTemplateColumns = visible ? '' : '1fr';
+    if (!visible && tab.classList.contains('is-active')) {
+        const routesTab = document.querySelector('.sheet-tab[data-tab="routes"]');
+        if (routesTab) routesTab.click();
+    }
+}
+
 async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5) {
     const sheetTabs = document.querySelector('.sheet-tabs');
     if (sheetTabs) sheetTabs.hidden = true;
+    setCostsTabVisible(false);
     // Immer auf dem Routen-Tab starten, sonst bleibt nach dem Ausblenden nichts sichtbar
     document.getElementById('results').hidden = false;
     document.getElementById('costPanel').hidden = true;
@@ -466,6 +482,7 @@ function removeSimilarRoutes(routes) {
 }
 
 async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetLon) {
+    const session = searchSession;
     // Direktfahrt nur, wenn "Auto" im Filter aktiv ist
     const showCar = isCarFilterChecked() && !!windowDirectCarRoute;
     // P+R-Routen ausblenden, wenn nur "Auto" gewählt ist
@@ -480,12 +497,6 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         const container = document.createElement('section');
         container.id = 'intermodal-results-container';
         container.className = 'routes';
-        container.innerHTML = `
-            <div class="routes__head">
-                <h3 class="routes__title">Gesamtrouten</h3>
-                <span class="routes__sub">Auto, ÖPNV und Fußweg</span>
-            </div>
-        `;
 
         // Zentrale Funktion, die alle Auswahl-Klassen und Buttons im Container zuverlässig zurücksetzt
         const clearAllSelections = () => {
@@ -636,6 +647,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
             return;
         }
 
+        if (session !== searchSession) return;
         resultsDiv.appendChild(container);
         const sheetTabs = document.querySelector('.sheet-tabs');
         if (sheetTabs) sheetTabs.hidden = false;
@@ -646,7 +658,10 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 ? Math.round(Number(windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0) / 60)
                 : Infinity;
             const bestPAndRMinutes = hasRoutes ? Number(routes[bestIndex].totalMinutes) : Infinity;
+            // Mit Rückfahrt zeigt nur eine P+R-Route Parkdauer und Gebühr, daher bevorzugen
+            const roundTripOn = document.getElementById('roundTrip')?.checked === true;
             const preferDirect = directCard
+                && !(roundTripOn && hasRoutes)
                 && (!hasRoutes || directMinutes <= bestPAndRMinutes || bestPAndRMinutes > directMinutes * 1.2);
 
             if (preferDirect) {
@@ -842,50 +857,9 @@ function formatEuro(value) {
 }
 
 function renderCostPanel(routes) {
+    // Keine Liste pro Route mehr: die Parkgebühren-Seite zeigt nur die Angaben zur Rückfahrt
     const panel = document.getElementById('costPanel');
-    if (!panel || !routes || routes.length === 0) return;
-
-    const items = routes.map((route, idx) => {
-        const cost = estimateParkingCost(route);
-        let amount;
-        if (route.feeStatus === 'free') {
-            amount = 'kostenlos';
-        } else if (cost !== null) {
-            amount = formatEuro(cost);
-        } else {
-            amount = route.feeDescription ? escapeHtml(route.feeDescription) : 'unbekannt';
-        }
-        const note = route.feeStatus === 'paid' && cost !== null
-            ? `Schätzung bei ${Math.round(Number(route.totalMinutes))} Min. Gesamtzeit`
-            : '';
-
-        return `
-            <li class="cost-item">
-                <div class="cost-item__info">
-                    <b>Option ${idx + 1}</b>
-                    <span>${escapeHtml(route.parkingName)}</span>
-                    ${note ? `<small>${note}</small>` : ''}
-                </div>
-                <div class="cost-item__amount">${amount}</div>
-            </li>`;
-    }).join('');
-
-    const withCost = routes
-        .map(r => estimateParkingCost(r))
-        .filter(v => v !== null);
-    const cheapest = withCost.length > 0
-        ? `<div class="cost-summary"><span>Günstigste Option</span><b>${formatEuro(Math.min(...withCost))}</b></div>`
-        : '';
-
-    panel.innerHTML = `
-        <div class="routes__head">
-            <h3 class="routes__title">Parkgebühren</h3>
-            <span class="routes__sub">Schätzung</span>
-        </div>
-        ${cheapest}
-        <ul class="cost-list">${items}</ul>
-        <p class="cost-note">Die tatsächliche Gebühr hängt von der echten Parkdauer und den Tarifen des Betreibers ab.</p>
-    `;
+    if (!panel) return;
 }
 
 document.querySelectorAll('.sheet-tab').forEach(tab => {
@@ -902,6 +876,9 @@ document.querySelectorAll('.sheet-tab').forEach(tab => {
 });
 
 document.getElementById('btnReset').addEventListener('click', () => {
+    searchSession++;
+    const submitBtnReset = document.getElementById('btnSearch');
+    if (submitBtnReset) submitBtnReset.classList.remove('loading');
     const form = document.getElementById('routeForm');
     // Verkehrsmittel-Auswahl merken und nach dem Reset wiederherstellen
     const productStates = new Map();
@@ -915,11 +892,11 @@ document.getElementById('btnReset').addEventListener('click', () => {
     clearMapResults();
 
     const results = document.getElementById('results');
+    results.hidden = false;
     results.innerHTML = `
         <div class="empty-state">
             <p>Gib Start und Ziel ein, um die optimalen P+R-Parkplätze zu berechnen.</p>
         </div>`;
-    results.hidden = false;
 
     const costPanel = document.getElementById('costPanel');
     costPanel.innerHTML = '';
@@ -932,6 +909,7 @@ document.getElementById('btnReset').addEventListener('click', () => {
     });
     const sheetTabs = document.querySelector('.sheet-tabs');
     if (sheetTabs) sheetTabs.hidden = true;
+    setCostsTabVisible(false);
 
     document.getElementById('start').focus();
 });
@@ -1047,6 +1025,7 @@ async function updateRoundTrip(route, originLat, originLon, targetLat, targetLon
     const old = document.getElementById('round-trip-panel');
     if (old) old.remove();
     document.querySelectorAll('#roundtrip-cost').forEach(el => el.remove());
+    setCostsTabVisible(false);
 
     const toggle = document.getElementById('roundTrip');
     if (!toggle || !toggle.checked) return;
@@ -1241,6 +1220,7 @@ function renderRoundTripCost(route, parkedFrom, parkedUntilIso, parkedMinutes, f
         <p class="cost-note">Parkdauer = Zeit zwischen Abstellen und Rückkehr am Parkplatz. Die Gebühr wird genau nach Minuten aus dem OSM-Tarif berechnet. Die tatsächliche Abrechnung kann nach angefangenen Stunden erfolgen.</p>
     `;
     costPanel.appendChild(block);
+    setCostsTabVisible(true);
 }
 
 

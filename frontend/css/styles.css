@@ -767,6 +767,10 @@ input[type="range"] {
     display: none !important;
 }
 
+.sheet-tabs {
+     margin-top: 20px !important;
+}
+
 /* Start/Ziel-Zusammenfassung in der Seitenleiste ausblenden */
 #sheetSummary {
     display: none !important;
