@@ -292,6 +292,8 @@ namespace Backend.Services
         private async Task<DirectCarRoute?> GetDirectCarRouteAsync(double lat, double lon, double destLat, double destLon)
         {
             var client = _clientFactory.CreateClient();
+            // Der öffentliche OSRM-Server lehnt Anfragen ohne User-Agent mit 403 ab
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
             string url = $"https://router.project-osrm.org/route/v1/driving/" +
                          $"{lon.ToString(CultureInfo.InvariantCulture)},{lat.ToString(CultureInfo.InvariantCulture)};" +
                          $"{destLon.ToString(CultureInfo.InvariantCulture)},{destLat.ToString(CultureInfo.InvariantCulture)}?overview=false";
