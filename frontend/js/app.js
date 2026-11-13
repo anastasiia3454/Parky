@@ -1258,7 +1258,10 @@ async function updateTrafficInfo(route, card, originLat, originLon) {
             toLon: String(route.parkingLon)
         });
         const response = await fetch(`${BACKEND_BASE}/api/Traffic/drive?${params}`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+            const detailText = await response.text().catch(() => '');
+            throw new Error(`HTTP ${response.status}${detailText ? ` – ${detailText}` : ''}`);
+        }
 
         const t = await response.json();
         const driveMinutes = Number(route.driveMinutes) || 0;
@@ -1271,6 +1274,6 @@ async function updateTrafficInfo(route, card, originLat, originLon) {
     } catch (err) {
         console.error('Verkehrslage:', err);
         chip.className = 'traffic-chip traffic-chip--unknown';
-        chip.textContent = 'Verkehrslage nicht verfügbar';
+        chip.textContent = `Verkehrslage nicht verfügbar (${err.message})`;
     }
 }
