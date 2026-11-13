@@ -268,6 +268,7 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
 }
 
 function clearMapResults() {
+    if (typeof clearTrafficOverlay === 'function') clearTrafficOverlay();
     [startMarker, destinationMarker, ...parkingMarkers,
         currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer]
         .forEach(layer => { if (layer) map.removeLayer(layer); });
@@ -336,47 +337,13 @@ function showOnlyParking(lat, lon) {
     renderParkingMarkers(lastParkings, lat, lon);
 }
 
-// Farben für die Karte: hell genug für den dunklen Kartenstil
-const MAP_LEG_COLORS = {
-    subway: '#3b82f6',
-    suburban: '#22c55e',
-    tram: '#f43f5e',
-    bus: '#c084fc',
-    ferry: '#22d3ee',
-    regional: '#980000',
-    express: '#facc15'
-};
-
-// Jeder ÖPNV-Abschnitt in seiner Linienfarbe, Fußwege orange und gestrichelt
-function buildLegLayers(legs) {
-    if (!Array.isArray(legs) || typeof L.Polyline.fromEncoded !== 'function') return [];
-
-    const layers = [];
-    legs.forEach(leg => {
-        if (!leg || !leg.polyline) return;
-
-        const style = leg.isWalk
-            ? { color: '#f97316', weight: 4, opacity: 0.9, dashArray: '5, 8' }
-            : { color: MAP_LEG_COLORS[leg.product] || '#9ca3af', weight: 5, opacity: 0.9 };
-
-        try {
-            layers.push(L.Polyline.fromEncoded(leg.polyline, style));
-        } catch (e) {
-            console.error("Fehler beim Dekodieren eines ÖPNV-Abschnitts:", e);
-        }
-    });
-    return layers;
-}
-
 async function drawFullIntermodalRoute(
     startLat, startLon,
     parkLat, parkLon,
     destLat, destLon,
     polylineTransit = null,
     targetStopLat = null,
-    targetStopLon = null,
-    hasDrive = true,
-    legs = null
+    targetStopLon = null
 ) {
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
@@ -391,9 +358,7 @@ async function drawFullIntermodalRoute(
         return;
     }
 
-    // Ohne Auto ist der erste Abschnitt ein Fußweg zur Haltestelle
-    const firstProfile = hasDrive ? 'driving' : 'foot';
-    const driveUrl = `https://router.project-osrm.org/route/v1/${firstProfile}/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
+    const driveUrl = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${parkLon},${parkLat}?overview=full&geometries=geojson`;
 
     try {
         const driveRes = await fetch(driveUrl);
@@ -401,19 +366,18 @@ async function drawFullIntermodalRoute(
 
         if (driveData.routes && driveData.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
-                style: hasDrive
-                    ? { color: '#00bfff', weight: 5, opacity: 0.9 }
-                    : { color: '#f97316', weight: 4, opacity: 0.9, dashArray: '5, 8' }
+                style: {
+                    color: '#00bfff',
+                    weight: 5,
+                    opacity: 0.9
+                }
             }).addTo(map);
         }
     } catch (err) {
-        console.error(hasDrive ? "Fehler beim Laden der Auto-Route:" : "Fehler beim Laden des Fußwegs zur Haltestelle:", err);
+        console.error("Fehler beim Laden der Auto-Route:", err);
     }
 
-    const legLayers = buildLegLayers(legs);
-    if (legLayers.length > 0) {
-        currentTransitRouteLayer = L.featureGroup(legLayers).addTo(map);
-    } else if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
+    if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
                 color: '#88ff00',
