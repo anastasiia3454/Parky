@@ -667,7 +667,7 @@ const PRODUCT_COLORS = {
     tram: '#f43f5e',
     bus: '#c084fc',
     ferry: '#2dd4bf',
-    regional: '#e5e7eb',
+    regional: '#1f2937',
     express: '#fde047'
 };
 
@@ -1316,7 +1316,7 @@ async function colorRouteByTraffic(fromLat, fromLon, toLat, toLon) {
 
             const layer = L.polyline(segment, {
                 color: trafficColor(ratio),
-                weight: 5,
+                weight: 4,
                 opacity: 0.95,
                 lineCap: 'round'
             }).addTo(map);
