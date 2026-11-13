@@ -205,6 +205,11 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         const startCoords = await geocodeAddress(startText);
         const destCoords = await geocodeAddress(destText);
 
+        resultsDiv.innerHTML = `
+            <p><b>Start:</b> ${escapeHtml(startCoords.displayName)}</p>
+            <p><b>Ziel:</b> ${escapeHtml(destCoords.displayName)}</p>
+        `;
+
         status.update('Suche optimale P+R-Parkplätze …');
 
         const sliderElement = document.querySelector('input[type="range"]') || document.getElementById('speedSlider');
@@ -301,13 +306,6 @@ async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weight
     }
 }
 
-function routeTimeRange(route) {
-    if (!route._start) route._start = new Date();
-    const fmt = (d) => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    const end = new Date(route._start.getTime() + Math.max(0, Math.round(Number(route.totalMinutes) || 0)) * 60000);
-    return `${fmt(route._start)} → ${fmt(end)} Uhr`;
-}
-
 function formatDuration(totalMinutes) {
     const m = Math.max(0, Math.round(Number(totalMinutes) || 0));
     const h = Math.floor(m / 60);
@@ -352,7 +350,7 @@ function buildRouteCard(route, index, isBest) {
     card.innerHTML = `
         <header class="route-card__head">
             <div>
-                <span class="route-card__option">${routeTimeRange(route)}</span>
+                <span class="route-card__option">Option ${index + 1}</span>
                 <span class="route-card__place">${escapeHtml(route.parkingName)}</span>
             </div>
             <div class="route-card__total">
@@ -514,6 +512,7 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
 
             document.dispatchEvent(new CustomEvent('parky:route-selected', { detail: { route } }));
             updateRoundTrip(route, originLat, originLon, targetLat, targetLon, card);
+            updateTrafficInfo(route, card, originLat, originLon);
         };
 
         // P+R-Routen laden (nur wenn sie angezeigt werden sollen)
@@ -773,7 +772,7 @@ function buildRouteDetail(route, index, isBest) {
     wrap.innerHTML = `
         <header class="route-detail__head">
             <div>
-                <h4 class="route-detail__title">${routeTimeRange(route)}</h4>
+                <h4 class="route-detail__title">Option ${index + 1}: Routendetails</h4>
                 <span class="route-detail__sub">${escapeHtml(route.parkingName || 'P+R Parkplatz')}</span>
                 ${best}
                 ${filterNote}
@@ -850,7 +849,7 @@ function renderCostPanel(routes) {
         return `
             <li class="cost-item">
                 <div class="cost-item__info">
-                    <b>${routeTimeRange(route)}</b>
+                    <b>Option ${idx + 1}</b>
                     <span>${escapeHtml(route.parkingName)}</span>
                     ${note ? `<small>${note}</small>` : ''}
                 </div>
@@ -864,6 +863,16 @@ function renderCostPanel(routes) {
     const cheapest = withCost.length > 0
         ? `<div class="cost-summary"><span>Günstigste Option</span><b>${formatEuro(Math.min(...withCost))}</b></div>`
         : '';
+
+    panel.innerHTML = `
+        <div class="routes__head">
+            <h3 class="routes__title">Parkgebühren</h3>
+            <span class="routes__sub">Schätzung</span>
+        </div>
+        ${cheapest}
+        <ul class="cost-list">${items}</ul>
+        <p class="cost-note">Die tatsächliche Gebühr hängt von der echten Parkdauer und den Tarifen des Betreibers ab.</p>
+    `;
 }
 
 document.querySelectorAll('.sheet-tab').forEach(tab => {
@@ -1216,4 +1225,51 @@ function renderRoundTripCost(route, parkedFrom, parkedUntilIso, parkedMinutes, f
         <p class="cost-note">Parkdauer = Zeit zwischen Abstellen und Rückkehr am Parkplatz. Die Gebühr wird genau nach Minuten aus dem OSM-Tarif berechnet. Die tatsächliche Abrechnung kann nach angefangenen Stunden erfolgen.</p>
     `;
     costPanel.appendChild(block);
+}
+
+
+// ==========================================================================
+// VERKEHRSLAGE (TomTom über Backend)
+// ==========================================================================
+
+const BACKEND_BASE = 'https://parky-luln.onrender.com';
+
+// Verkehrslage zur Anfahrt Start → P+R, direkt in der Detailansicht der Option
+async function updateTrafficInfo(route, card, originLat, originLon) {
+    document.querySelectorAll('.traffic-chip').forEach(el => el.remove());
+
+    const detail = card && card.nextElementSibling && card.nextElementSibling.classList.contains('route-detail')
+        ? card.nextElementSibling
+        : null;
+    if (!detail || !hasDriveLeg(route)) return;
+
+    const chip = document.createElement('div');
+    chip.className = 'traffic-chip traffic-chip--loading';
+    chip.textContent = 'Verkehrslage wird geladen …';
+    const header = detail.querySelector('.route-detail__head');
+    if (header) header.after(chip); else detail.prepend(chip);
+
+    try {
+        const params = new URLSearchParams({
+            fromLat: String(originLat),
+            fromLon: String(originLon),
+            toLat: String(route.parkingLat),
+            toLon: String(route.parkingLon)
+        });
+        const response = await fetch(`${BACKEND_BASE}/api/Traffic/drive?${params}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const t = await response.json();
+        const driveMinutes = Number(route.driveMinutes) || 0;
+        const extra = t.level === 'free' || t.level === 'closed' || t.ratio <= 0
+            ? 0
+            : Math.max(0, Math.round(driveMinutes * (1 / t.ratio - 1)));
+
+        chip.className = `traffic-chip traffic-chip--${t.level}`;
+        chip.textContent = `Verkehr zum P+R: ${t.label}${extra > 0 ? ` · ca. +${extra} Min.` : ''}`;
+    } catch (err) {
+        console.error('Verkehrslage:', err);
+        chip.className = 'traffic-chip traffic-chip--unknown';
+        chip.textContent = 'Verkehrslage nicht verfügbar';
+    }
 }

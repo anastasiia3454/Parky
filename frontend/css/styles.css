@@ -738,3 +738,23 @@ input[type="range"] {
 .empty-state {
     margin-top: 10px;
 }
+
+/* ==========================================================================
+   12. VERKEHRSLAGE
+   ========================================================================== */
+.traffic-chip {
+    display: inline-block;
+    margin: 4px 0 12px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background-color: var(--surface-card);
+}
+
+.traffic-chip--free { color: #aef65c; border-color: #3f6212; }
+.traffic-chip--medium { color: #facc15; border-color: #854d0e; }
+.traffic-chip--slow { color: #fca5a5; border-color: #991b1b; }
+.traffic-chip--closed { color: #ffffff; background-color: #991b1b; border-color: #991b1b; }
