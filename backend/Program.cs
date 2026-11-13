@@ -25,6 +25,7 @@ builder.Services.AddMemoryCache();
 // Dem Server sagen, welche Controller und Arbeiter Services es gibt
 builder.Services.AddControllers();
 builder.Services.AddScoped<TransitService>();
+builder.Services.AddScoped<TrafficService>();
 builder.Services.AddScoped<ParkAndRideService>();
 
 // Jetzt wird der Server zusammengebaut
