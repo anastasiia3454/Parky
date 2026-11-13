@@ -761,3 +761,8 @@ input[type="range"] {
 
 .traffic-chip--loading { color: var(--text-muted); }
 .traffic-chip--unknown { color: #fca5a5; border-color: #7f1d1d; background-color: #1c0a0a; }
+
+/* Routen/Parkgebühren-Switcher erst nach dem Finden der Routen */
+.sheet-tabs[hidden] {
+    display: none !important;
+}

@@ -257,6 +257,16 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
 });
 
 async function fetchParkAndRide(lat, lon, destLat = null, destLon = null, weightSpeed = 0.5) {
+    const sheetTabs = document.querySelector('.sheet-tabs');
+    if (sheetTabs) sheetTabs.hidden = true;
+    // Immer auf dem Routen-Tab starten, sonst bleibt nach dem Ausblenden nichts sichtbar
+    document.getElementById('results').hidden = false;
+    document.getElementById('costPanel').hidden = true;
+    document.querySelectorAll('.sheet-tab').forEach(t => {
+        const active = t.dataset.tab === 'routes';
+        t.classList.toggle('is-active', active);
+        t.setAttribute('aria-selected', String(active));
+    });
     try {
         let url = `https://parky-luln.onrender.com/api/parkandride?lat=${lat}&lon=${lon}&weightSpeed=${weightSpeed}`;
         if (destLat && destLon) {
@@ -629,6 +639,8 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
         }
 
         resultsDiv.appendChild(container);
+        const sheetTabs = document.querySelector('.sheet-tabs');
+        if (sheetTabs) sheetTabs.hidden = false;
         if (hasRoutes) renderCostPanel(routes.filter(hasDriveLeg));
 
         if (AUTO_SELECT_BEST_ROUTE) {
@@ -920,6 +932,8 @@ document.getElementById('btnReset').addEventListener('click', () => {
         t.classList.toggle('is-active', active);
         t.setAttribute('aria-selected', String(active));
     });
+    const sheetTabs = document.querySelector('.sheet-tabs');
+    if (sheetTabs) sheetTabs.hidden = true;
 
     document.getElementById('start').focus();
 });
