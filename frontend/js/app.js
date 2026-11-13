@@ -592,6 +592,9 @@ async function fetchFullIntermodalRoute(originLat, originLon, targetLat, targetL
                 if (typeof drawDirectCarRoute === 'function') {
                     drawDirectCarRoute(originLat, originLon, targetLat, targetLon);
                 }
+                const directSec = windowDirectCarRoute ? (windowDirectCarRoute.durationSeconds || windowDirectCarRoute.duration || 0) : 0;
+                showTrafficChipAfter(directCard, originLat, originLon, targetLat, targetLon, Math.round(directSec / 60));
+                colorRouteByTraffic(originLat, originLon, targetLat, targetLon);
             });
             container.appendChild(directCard);
         }
@@ -1237,6 +1240,7 @@ const BACKEND_BASE = 'https://parky-luln.onrender.com';
 
 // Verkehrslage zur Anfahrt Start → P+R, direkt in der Detailansicht der Option
 async function updateTrafficInfo(route, card, originLat, originLon) {
+    clearTrafficOverlay();
     document.querySelectorAll('.traffic-chip').forEach(el => el.remove());
 
     const detail = card && card.nextElementSibling && card.nextElementSibling.classList.contains('route-detail')
@@ -1244,36 +1248,70 @@ async function updateTrafficInfo(route, card, originLat, originLon) {
         : null;
     if (!detail || !hasDriveLeg(route)) return;
 
-    const chip = document.createElement('div');
-    chip.className = 'traffic-chip traffic-chip--loading';
-    chip.textContent = 'Verkehrslage wird geladen …';
-    const header = detail.querySelector('.route-detail__head');
-    if (header) header.after(chip); else detail.prepend(chip);
+    colorRouteByTraffic(originLat, originLon, route.parkingLat, route.parkingLon);
+    await showTrafficChipAfter(
+        detail.querySelector('.route-detail__head') || detail,
+        originLat, originLon,
+        route.parkingLat, route.parkingLon,
+        route.driveMinutes
+    );
+}
 
+// ---------- Einfärbung der Strecke nach Verkehrslage ----------
+let trafficOverlayLayers = [];
+
+function clearTrafficOverlay() {
+    trafficOverlayLayers.forEach(layer => map.removeLayer(layer));
+    trafficOverlayLayers = [];
+}
+
+function trafficColor(ratio) {
+    if (ratio === null || ratio === undefined) return null;
+    if (ratio >= 0.85) return '#22c55e';   // flüssig
+    if (ratio >= 0.6) return '#f59e0b';    // mittel
+    return '#ef4444';                      // stockend
+}
+
+// Straßengeometrie von OSRM holen, an mehreren Punkten die Verkehrslage abfragen
+// und jeden Abschnitt in der passenden Farbe darüberlegen
+async function colorRouteByTraffic(fromLat, fromLon, toLat, toLon) {
+    clearTrafficOverlay();
     try {
-        const params = new URLSearchParams({
-            fromLat: String(originLat),
-            fromLon: String(originLon),
-            toLat: String(route.parkingLat),
-            toLon: String(route.parkingLon)
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=full&geometries=geojson`;
+        const osrm = await fetch(osrmUrl).then(r => (r.ok ? r.json() : null));
+        const coords = osrm && osrm.routes && osrm.routes[0] ? osrm.routes[0].geometry.coordinates : null; // [lon, lat]
+        if (!coords || coords.length < 2) return;
+
+        const count = Math.min(10, coords.length);
+        const idx = Array.from({ length: count }, (_, i) => Math.round(i * (coords.length - 1) / (count - 1)));
+        const points = idx.map(i => [coords[i][1], coords[i][0]]);
+
+        const response = await fetch(`${BACKEND_BASE}/api/Traffic/flow`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ points })
         });
-        const response = await fetch(`${BACKEND_BASE}/api/Traffic/drive?${params}`);
-        if (!response.ok) {
-            const detailText = await response.text().catch(() => '');
-            throw new Error(`HTTP ${response.status}${detailText ? ` – ${detailText}` : ''}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const ratios = await response.json();
+
+        for (let s = 0; s < count - 1; s++) {
+            const values = [ratios[s] && ratios[s].ratio, ratios[s + 1] && ratios[s + 1].ratio]
+                .filter(v => v !== null && v !== undefined);
+            if (values.length === 0) continue;
+
+            const ratio = values.reduce((a, b) => a + b, 0) / values.length;
+            const segment = coords.slice(idx[s], idx[s + 1] + 1).map(c => [c[1], c[0]]);
+            if (segment.length < 2) continue;
+
+            const layer = L.polyline(segment, {
+                color: trafficColor(ratio),
+                weight: 6,
+                opacity: 0.95,
+                lineCap: 'round'
+            }).addTo(map);
+            trafficOverlayLayers.push(layer);
         }
-
-        const t = await response.json();
-        const driveMinutes = Number(route.driveMinutes) || 0;
-        const extra = t.level === 'free' || t.level === 'closed' || t.ratio <= 0
-            ? 0
-            : Math.max(0, Math.round(driveMinutes * (1 / t.ratio - 1)));
-
-        chip.className = `traffic-chip traffic-chip--${t.level}`;
-        chip.textContent = `Verkehr zum P+R: ${t.label}${extra > 0 ? ` · ca. +${extra} Min.` : ''}`;
     } catch (err) {
-        console.error('Verkehrslage:', err);
-        chip.className = 'traffic-chip traffic-chip--unknown';
-        chip.textContent = `Verkehrslage nicht verfügbar (${err.message})`;
+        console.error('Verkehrsfarben:', err);
     }
 }
