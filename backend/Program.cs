@@ -8,11 +8,19 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVercel", policy =>
     {
-        policy.WithOrigins(
-                "http://127.0.0.1:5500",
-                "http://localhost:5500",
-                "https://parky-frontend.vercel.app"
-            )
+        policy.SetIsOriginAllowed(origin =>
+                {
+                    // Lokale Entwicklung: localhost und 127.0.0.1 auf beliebigem Port (z. B. Live Server 5500, 5501)
+                    if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                    {
+                        if ((uri.Host == "localhost" || uri.Host == "127.0.0.1") &&
+                            (uri.Scheme == "http" || uri.Scheme == "https"))
+                        {
+                            return true;
+                        }
+                    }
+                    return origin == "https://parky-frontend.vercel.app";
+                })
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
