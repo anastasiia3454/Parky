@@ -39,7 +39,7 @@ namespace Backend.Services
         private const int SearchRadiusMeters = 10000;
         private const double GridDegrees = 0.02;
         private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
-        private const int MaxAttempts = 2;
+        private const int MaxAttempts = 1;
 
         private readonly IHttpClientFactory _clientFactory;
         private readonly IMemoryCache _cache;
@@ -89,13 +89,13 @@ namespace Backend.Services
             }
 
             var client = _clientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(10);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
 
             string latStr = gridLat.ToString(CultureInfo.InvariantCulture);
             string lonStr = gridLon.ToString(CultureInfo.InvariantCulture);
 
-            string overpassQuery = $"[out:json][timeout:25];nwr[\"park_ride\"=\"yes\"](around:{SearchRadiusMeters},{latStr},{lonStr});out center;";
+            string overpassQuery = $"[out:json][timeout:10];nwr[\"park_ride\"=\"yes\"](around:{SearchRadiusMeters},{latStr},{lonStr});out center;";
 
             var rawCandidates = await QueryOverpassAsync(client, overpassQuery);
             if (rawCandidates.Count == 0)
@@ -293,6 +293,7 @@ namespace Backend.Services
         {
             var client = _clientFactory.CreateClient();
             // Der öffentliche OSRM-Server lehnt Anfragen ohne User-Agent mit 403 ab
+            client.Timeout = TimeSpan.FromSeconds(8);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ParkAndRideApp/1.0 (https://github.com/parkyapp)");
             string url = $"https://router.project-osrm.org/route/v1/driving/" +
                          $"{lon.ToString(CultureInfo.InvariantCulture)},{lat.ToString(CultureInfo.InvariantCulture)};" +
