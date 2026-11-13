@@ -345,15 +345,16 @@ function buildLegLayers(legs) {
     legs.forEach(leg => {
         if (!leg || !leg.polyline) return;
 
-        const color = leg.isWalk
-            ? '#f97316'
-            : (typeof productColor === 'function' ? productColor(leg.product) : '#6b7280');
-        const style = leg.isWalk
-            ? { color, weight: 4, opacity: 0.9, dashArray: '5, 8' }
-            : { color, weight: 5, opacity: 0.9 };
-
         try {
-            layers.push(L.Polyline.fromEncoded(leg.polyline, style));
+            if (leg.isWalk) {
+                layers.push(L.Polyline.fromEncoded(leg.polyline, { color: '#f97316', weight: 4, opacity: 0.95 }));
+                return;
+            }
+
+            const color = typeof productColor === 'function' ? productColor(leg.product) : '#6b7280';
+            // Heller Rand unter der Linie, damit ÖPNV klar von der Auto-Route zu unterscheiden ist
+            layers.push(L.Polyline.fromEncoded(leg.polyline, { color: '#ffffff', weight: 10, opacity: 1 }));
+            layers.push(L.Polyline.fromEncoded(leg.polyline, { color, weight: 6, opacity: 1 }));
         } catch (e) {
             console.error("Fehler beim Dekodieren eines ÖPNV-Abschnitts:", e);
         }
@@ -395,8 +396,8 @@ async function drawFullIntermodalRoute(
         if (driveData.routes && driveData.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
                 style: hasDrive
-                    ? { color: '#00bfff', weight: 5, opacity: 0.9 }
-                    : { color: '#f97316', weight: 4, opacity: 0.9, dashArray: '5, 8' }
+                    ? { color: '#38bdf8', weight: 4, opacity: 0.95 }
+                    : { color: '#f97316', weight: 4, opacity: 0.9 }
             }).addTo(map);
         }
     } catch (err) {
@@ -409,8 +410,8 @@ async function drawFullIntermodalRoute(
     } else if (polylineTransit && typeof L.Polyline.fromEncoded === 'function') {
         try {
             currentTransitRouteLayer = L.Polyline.fromEncoded(polylineTransit, {
-                color: '#88ff00',
-                weight: 5,
+                color: '#e5e7eb',
+                weight: 6,
                 opacity: 0.85
             }).addTo(map);
         } catch (e) {
@@ -422,8 +423,7 @@ async function drawFullIntermodalRoute(
 
         currentTransitRouteLayer = L.polyline([[parkLat, parkLon], [endLat, endLon]], {
             color: '#aef65c',
-            weight: 4,
-            dashArray: '6, 8'
+            weight: 4
         }).addTo(map);
     }
 
@@ -441,8 +441,7 @@ async function drawFullIntermodalRoute(
                 style: {
                     color: '#f97316',
                     weight: 4,
-                    opacity: 0.9,
-                    dashArray: '5, 8'
+                    opacity: 0.9
                 }
             }).addTo(map);
         }
@@ -476,8 +475,8 @@ async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
         if (data.routes && data.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(data.routes[0].geometry, {
                 style: {
-                    color: '#00bfff',
-                    weight: 6,
+                    color: '#38bdf8',
+                    weight: 4,
                     opacity: 0.9
                 }
             }).addTo(map);
