@@ -896,7 +896,8 @@ document.getElementById('btnReset').addEventListener('click', () => {
         .forEach(box => productStates.set(box, box.checked));
     form.reset();
     productStates.forEach((checked, box) => { box.checked = checked; });
-    document.getElementById('weightSpeed').dispatchEvent(new Event('input'));
+    const weightInput = document.getElementById('weightSpeed');
+    if (weightInput) weightInput.dispatchEvent(new Event('input'));
 
     clearMapResults();
 

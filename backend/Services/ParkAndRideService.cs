@@ -303,7 +303,11 @@ namespace Backend.Services
                 var response = await client.GetAsync(url);
                 Console.WriteLine($"[DEBUG] OSRM Status Code: {response.StatusCode}");
 
-                if (!response.IsSuccessStatusCode) return null;
+                if (!response.IsSuccessStatusCode)
+                {
+                    // Fallback: Fahrzeit über den Table-Endpunkt (funktioniert, wenn /route abgelehnt wird)
+                    return await GetDirectCarRouteViaTableAsync(client, lat, lon, destLat, destLon);
+                }
 
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(json);
@@ -329,5 +333,35 @@ namespace Backend.Services
 
             return null;
         }
-    }
+    
+        // Fahrzeit Start → Ziel über den Table-Endpunkt (ohne Distanz)
+        private static async Task<DirectCarRoute?> GetDirectCarRouteViaTableAsync(HttpClient client, double lat, double lon, double destLat, double destLon)
+        {
+            string coordinates = $"{lon.ToString(CultureInfo.InvariantCulture)},{lat.ToString(CultureInfo.InvariantCulture)};" +
+                                 $"{destLon.ToString(CultureInfo.InvariantCulture)},{destLat.ToString(CultureInfo.InvariantCulture)}";
+            string url = $"https://router.project-osrm.org/table/v1/driving/{coordinates}?sources=0&destinations=1";
+            try
+            {
+                var response = await client.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return null;
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                if (!doc.RootElement.TryGetProperty("durations", out var durations)) return null;
+                if (durations.ValueKind != JsonValueKind.Array || durations.GetArrayLength() == 0) return null;
+
+                var value = durations[0][0];
+                if (value.ValueKind != JsonValueKind.Number) return null;
+
+                double duration = value.GetDouble();
+                Console.WriteLine($"[DEBUG] Direkt-Fahrzeit über Table: {duration}s");
+                return new DirectCarRoute(duration, 0);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FEHLER Table-Fallback]: {ex.Message}");
+                return null;
+            }
+        }
+}
 }
