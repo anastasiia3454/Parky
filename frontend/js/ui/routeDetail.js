@@ -6,6 +6,10 @@ export function productColor(product) {
     return PRODUCT_COLORS[product] || '#6b7280';
 }
 
+// map.js (normales Script) färbt die ÖPNV-Abschnitte auf der Karte über den globalen
+// Scope mit derselben Farbe wie die Routendetails. Ohne diese Zeile wären sie grau.
+window.productColor = productColor;
+
 export function detailStep(modifier, rail, { title, meta = '', body = '', lineHtml = '', time = '' }) {
     const li = document.createElement('li');
     li.className = `route-detail__step route-detail__step--${modifier}`;
