@@ -57,6 +57,9 @@ function getToastRegion() {
     return region;
 }
 
+// Laufende Lade-Meldungen, damit der Abbruch sie sofort beenden kann
+const loadingToasts = new Set();
+
 function showToast(message, options = {}) {
     const region = getToastRegion();
     const el = document.createElement('div');
@@ -92,6 +95,7 @@ function showToast(message, options = {}) {
     function close() {
         if (closed) return;
         closed = true;
+        loadingToasts.delete(handle);
         clearTimeout(timer);
         el.classList.remove('is-visible');
         setTimeout(() => el.remove(), 400);
@@ -102,8 +106,15 @@ function showToast(message, options = {}) {
         const durationGiven = newOptions.duration !== undefined;
         state = { ...state, ...newOptions };
         if (!state.loading && !durationGiven && newOptions.loading === false) state.duration = 4000;
+        if (!state.loading) loadingToasts.delete(handle);
         render(newMessage);
         schedule();
+    }
+
+    // Sofortiger Abbruch: Lade-Meldung wird zur Hinweis-Meldung und bleibt sichtbar
+    function abort() {
+        if (closed || !state.loading) return;
+        update('Suche abgebrochen', { type: 'info', loading: false, duration: 5000 });
     }
 
     render(message);
@@ -115,7 +126,9 @@ function showToast(message, options = {}) {
     el.addEventListener('click', close);
     schedule();
 
-    return { el, update, close };
+    const handle = { el, update, close, abort };
+    if (state.loading) loadingToasts.add(handle);
+    return handle;
 }
 
 function saveRecentSearch(start, destination) {
@@ -208,7 +221,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     try {
         const startCoords = await geocodeAddress(startText);
         const destCoords = await geocodeAddress(destText);
-        if (session !== searchSession) { status.update('Suche abgebrochen', { type: 'info', loading: false, duration: 5000 }); return; }
+        if (session !== searchSession) return;
 
         status.update('Suche optimale P+R-Parkplätze …');
 
@@ -225,7 +238,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             destCoords.lon,
             sliderValue
         );
-        if (session !== searchSession) { clearMapResults(); status.update('Suche abgebrochen', { type: 'info', loading: false, duration: 5000 }); return; }
+        if (session !== searchSession) { clearMapResults(); return; }
 
         if (parkings && parkings.length > 0) {
             const n = parkings.length;
@@ -243,15 +256,12 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         try {
             await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
         } finally {
-            if (session !== searchSession) {
-                routeStatus.update('Suche abgebrochen', { type: 'info', loading: false, duration: 5000 });
-            } else {
-                routeStatus.close();
-            }
+            if (session === searchSession) routeStatus.close();
         }
         
     } catch (error) {
         console.error(error);
+        if (session !== searchSession) return;
         const message = error && error.message && error.message.startsWith('Adresse nicht gefunden')
             ? error.message
             : 'Fehler bei der Suche oder API-Abfrage.';
@@ -881,6 +891,7 @@ document.querySelectorAll('.sheet-tab').forEach(tab => {
 
 document.getElementById('btnReset').addEventListener('click', () => {
     searchSession++;
+    [...loadingToasts].forEach(toast => toast.abort());
     const submitBtnReset = document.getElementById('btnSearch');
     if (submitBtnReset) submitBtnReset.classList.remove('loading');
     const form = document.getElementById('routeForm');
