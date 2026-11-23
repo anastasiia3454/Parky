@@ -1046,7 +1046,7 @@ body.theme-light .product-chip input:checked + .chip-card {
 }
 
 body.theme-light .product-chip input:checked + .chip-card .chip-icon {
-    color: #1c2433 !important;
+    color: #000000 !important;
 }
 
 body.theme-light .product-chip input:checked + .chip-card .chip-label {

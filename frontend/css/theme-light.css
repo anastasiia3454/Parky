@@ -1,19 +1,36 @@
 /* =========================================================
-   Augenfreundliches Light-Theme (Standard-Kartenansicht)
+   Helles Theme mit orangen Akzenten (Standard-Kartenansicht)
+   Aktivieren: <body class="theme-light">
    ========================================================= */
 
 body.theme-light {
-    --bg-main: #f6f7f5;          /* Warmes, blendfreies Off-White */
-    --bg-surface: #edf0ec;       /* Eingabefelder & Cards */
-    --bg-surface-hover: #e2e7e0; /* Hover-Zustände */
-    --border-subtle: #d5dcd3;    /* Weiche Rahmenlinien */
-    --text-primary: #1c241e;     /* Tiefes Anthrazit statt hartem Schwarz */
-    --text-secondary: #525e55;   /* Gedämpftes Grau-Grün */
-    --accent-green: #4d8b1f;     /* Kontrastreiches Grün für helle Flächen */
-    --accent-lime: #9ee34b;      /* Markenakzent */
+    /* Flächen */
+    --bg-main: #ffffff;             /* warmes Off-White */
+    --bg-surface: #fbfbfb;          /* Eingabefelder, Karten */
+    --bg-surface-hover: #ffedd5;    /* Hover */
+    --bg-white: #ffffff;
+
+    /* Rahmen & Text */
+    --border-subtle: #FED7AA;       /* weiches Orange-Grau */
+    --text-primary: #000000;
+    --text-secondary: #000000;
+    --text-placeholder: #000000;
+
+    /* Akzente */
+    --accent: #ea580c;              /* Orange für Rahmen, Linien, Fokus (guter Kontrast auf Weiß) */
+    --accent-bright: #f97316;       /* Hauptbutton, Schalter */
+    --accent-soft: #ffedd5;         /* gewählte Chips */
+    --accent-on-soft: #7c2d12;      /* Text auf gewählten Chips */
+
+    /* Palette für roundtrip.css und suggest.css (dort fest verdrahtet) */
+    --pal-1: #fff7ed;
+    --pal-2: #fed7aa;
+    --pal-3: #fdba74;
+    --pal-4: #000000;
+    --pal-5: #000000;
 }
 
-/* Sidebar & Sheet (Desktop + Mobile) */
+/* ---------- Sidebar & Sheet (Desktop + Mobile) ---------- */
 body.theme-light #sidebar,
 body.theme-light .sheet-body,
 body.theme-light .sheet-grabber,
@@ -25,14 +42,14 @@ body.theme-light .desk-footer {
 
 body.theme-light .sheet-handle,
 body.theme-light .desk-handle span {
-    background-color: #bcc5b9;
+    background-color: #fdba74;
 }
 
 body.theme-light .sheet-summary {
     color: var(--text-secondary);
 }
 
-/* Eingabefelder & Trip-Card */
+/* ---------- Labels & Eingabefelder ---------- */
 body.theme-light .input-group label,
 body.theme-light .slider-header label,
 body.theme-light .trip-toggle__title {
@@ -53,25 +70,25 @@ body.theme-light .trip-card {
 }
 
 body.theme-light input[type="text"]::placeholder {
-    color: #7b877e;
+    color: var(--text-placeholder);
 }
 
 body.theme-light input[type="text"]:focus,
 body.theme-light input[type="datetime-local"]:focus {
-    background-color: #ffffff;
-    border-color: var(--accent-green);
+    background-color: var(--bg-white);
+    border-color: var(--accent);
     outline: none;
 }
 
-/* Verkehrsmittel-Chips & Deutschlandticket-Button */
+/* ---------- Verkehrsmittel-Chips & Deutschlandticket ---------- */
 body.theme-light .chip-card {
     background-color: var(--bg-surface);
     border: 1px solid var(--border-subtle);
 }
 
 body.theme-light .product-chip input:checked + .chip-card {
-    background-color: #dff2c8;
-    border-color: var(--accent-green);
+    background-color: var(--accent-soft);
+    border-color: var(--accent-bright);
 }
 
 body.theme-light .ticket-btn {
@@ -82,16 +99,24 @@ body.theme-light .ticket-btn {
 
 body.theme-light .ticket-btn.is-active,
 body.theme-light .ticket-btn[aria-pressed="true"] {
-    background-color: #dff2c8;
-    border-color: var(--accent-green);
-    color: #163308;
+    background-color: var(--accent-soft);
+    border-color: var(--accent-bright);
+    color: var(--accent-on-soft);
 }
 
-/* Action-Buttons */
+/* ---------- Action-Buttons ---------- */
+/* Such-Button: Hintergrund #EF750F, Schrift schwarz.
+   !important, weil ältere Regeln (components.css) sonst den Hintergrund überschreiben. */
 body.theme-light .btn-submit {
-    background-color: var(--accent-lime);
-    color: #141c0d;
+    background-color: #EF750F !important;
+    color: #ffffff !important;
     font-weight: 700;
+}
+
+/* Hover: dunklerer Orange-Ton als Hintergrund, Text bleibt weiß */
+body.theme-light .btn-submit:hover {
+    background-color: #C95F0A !important;
+    color: #ffffff !important;
 }
 
 body.theme-light .btn-secondary {
@@ -104,7 +129,7 @@ body.theme-light .btn-secondary:hover {
     background-color: var(--bg-surface-hover);
 }
 
-/* Tabs & Ergebnis-Container */
+/* ---------- Tabs & Ergebnis-Container ---------- */
 body.theme-light .sheet-tabs {
     border-bottom: 1px solid var(--border-subtle);
 }
@@ -115,7 +140,7 @@ body.theme-light .sheet-tab {
 
 body.theme-light .sheet-tab.is-active {
     color: var(--text-primary);
-    border-bottom-color: var(--accent-green);
+    border-bottom-color: var(--accent);
 }
 
 body.theme-light .results-container,
@@ -127,7 +152,7 @@ body.theme-light .parking-card {
     border-color: var(--border-subtle);
 }
 
-/* Karten-Controls (Zoom & Kartenstil-Umschalter) */
+/* ---------- Karten-Controls (Zoom & Kartenstil) ---------- */
 body.theme-light .map-style-switch,
 body.theme-light .leaflet-bar a {
     background-color: var(--bg-main);
@@ -140,30 +165,29 @@ body.theme-light .leaflet-bar a:hover {
 }
 
 body.theme-light .map-style-switch__label {
-    background-color: rgba(246, 247, 245, 0.92);
+    background-color: rgba(255, 253, 250, 0.92);
     color: var(--text-primary);
 }
 
-/* Leaflet Popups */
+/* ---------- Leaflet-Popups ---------- */
 body.theme-light .leaflet-popup-content-wrapper,
 body.theme-light .leaflet-popup-tip {
     background-color: var(--bg-main);
     color: var(--text-primary);
-    box-shadow: 0 6px 20px rgba(28, 36, 30, 0.14);
+    box-shadow: 0 6px 20px rgba(31, 20, 8, 0.14);
 }
-/* ==========================================================================
-   EXAKTE OVERRIDES FÜR ROUNDTRIP.CSS & SUGGEST.CSS (LIGHT THEME)
-   ========================================================================== */
 
-/* 1. Hin- und Rückfahrt Karte (exakte Spezifität aus roundtrip.css) */
+/* ==========================================================================
+   Hin- und Rückfahrt (überschreibt roundtrip.css)
+   ========================================================================== */
 body.theme-light .input-group .trip-card {
-    background: #ffffff !important;
+    background: var(--bg-white) !important;
     border: 1.5px solid var(--pal-2) !important;
 }
 
 body.theme-light .input-group .trip-card:has(.trip-toggle__input:checked) {
-    border-color: var(--pal-5) !important;
-    box-shadow: 0 0 0 3px rgba(28, 36, 51, 0.15) !important;
+    border-color: var(--accent-bright) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18) !important;
 }
 
 body.theme-light .input-group .trip-toggle {
@@ -176,11 +200,11 @@ body.theme-light .trip-toggle__icon {
 }
 
 body.theme-light .input-group .trip-card:has(.trip-toggle__input:checked) .trip-toggle__icon {
-    background: var(--pal-5) !important;
-    color: var(--pal-1) !important;
+    background: var(--accent-soft) !important;
+    color: var(--accent) !important;
 }
 
-/* Switch Track & Punkt */
+/* Schalter */
 body.theme-light .trip-switch {
     background: var(--pal-2) !important;
     border-color: var(--pal-3) !important;
@@ -191,15 +215,15 @@ body.theme-light .trip-switch::after {
 }
 
 body.theme-light .trip-toggle__input:checked + .trip-switch {
-    background: var(--pal-5) !important;
-    border-color: var(--pal-5) !important;
+    background: var(--accent-bright) !important;
+    border-color: var(--accent-bright) !important;
 }
 
 body.theme-light .trip-toggle__input:checked + .trip-switch::after {
-    background: var(--pal-1) !important;
+    background: #1f1408 !important;
 }
 
-/* Rückfahrt-Zeitbereich & Trennlinie */
+/* Zeitbereich & Trennlinie */
 body.theme-light .input-group .trip-return {
     border-top-color: var(--pal-2) !important;
 }
@@ -216,15 +240,17 @@ body.theme-light .input-group .trip-return input[type="datetime-local"] {
 }
 
 body.theme-light .input-group .trip-return input[type="datetime-local"]:focus {
-    background: #ffffff !important;
-    border-color: var(--pal-5) !important;
+    background: var(--bg-white) !important;
+    border-color: var(--accent) !important;
 }
 
-/* 2. Adress-Autovervollständigung (exakte Klassen aus suggest.css) */
+/* ==========================================================================
+   Adress-Vorschläge (überschreibt suggest.css)
+   ========================================================================== */
 body.theme-light .suggest-list {
-    background: #ffffff !important;
+    background: var(--bg-white) !important;
     border: 1.5px solid var(--pal-2) !important;
-    box-shadow: 0 10px 25px -5px rgba(28, 36, 51, 0.15) !important;
+    box-shadow: 0 10px 25px -5px rgba(31, 20, 8, 0.15) !important;
 }
 
 body.theme-light .suggest-item {
@@ -233,6 +259,178 @@ body.theme-light .suggest-item {
 
 body.theme-light .suggest-item:hover,
 body.theme-light .suggest-item.is-active {
-    background: var(--pal-1) !important;
-    color: var(--pal-5) !important;
+    background: var(--accent-soft) !important;
+    color: var(--accent-on-soft) !important;
 }
+
+/* ==========================================================================
+   Verlauf (recent.css)
+   ========================================================================== */
+body.theme-light .recent-searches-container {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+}
+
+body.theme-light .recent-searches-container h4,
+body.theme-light .recent-chip {
+    color: var(--text-primary);
+}
+
+body.theme-light .recent-clear {
+    color: var(--text-secondary);
+}
+
+body.theme-light .recent-clear:hover,
+body.theme-light .recent-clear:focus-visible {
+    color: var(--accent-on-soft);
+    background: var(--accent-soft);
+}
+
+body.theme-light .recent-remove {
+    background: var(--bg-white);
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+body.theme-light .recent-remove:hover,
+body.theme-light .recent-remove:focus-visible {
+    color: var(--accent-on-soft);
+    border-color: var(--accent-bright);
+}
+
+/* ==========================================================================
+   Icons, Eingabefelder und Text (Akzent #EF750F, Text schwarz)
+   ========================================================================== */
+
+/* Icons vor Startadresse und Zieladresse */
+body.theme-light .input-group label svg,
+body.theme-light .input-group > svg {
+    color: #EF750F !important;
+    stroke: #EF750F !important;
+}
+
+body.theme-light .input-group label svg:not([fill="none"]),
+body.theme-light .input-group > svg:not([fill="none"]) {
+    fill: #EF750F !important;
+}
+
+/* Eingabefelder: Text schwarz, Hover und Aktiv in #EF750F */
+body.theme-light input[type="text"] {
+    color: #000000 !important;
+}
+
+body.theme-light input[type="text"]::placeholder {
+    color: #000000 !important;
+    opacity: 0.5;
+}
+
+body.theme-light input[type="text"]:hover,
+body.theme-light input[type="text"]:focus,
+body.theme-light input[type="text"]:active {
+    border-color: #EF750F !important;
+    box-shadow: 0 0 0 3px rgba(239, 117, 15, 0.2) !important;
+    outline: none !important;
+}
+
+/* Text und Labels */
+body.theme-light,
+body.theme-light .input-group label,
+body.theme-light .slider-header label,
+body.theme-light .trip-toggle__title,
+body.theme-light .trip-toggle__sub,
+body.theme-light .trip-return__label,
+body.theme-light .sheet-summary {
+    color: #000000 !important;
+}
+
+/* ==========================================================================
+   Schwarze Rahmen und Text für Eingaben und Buttons
+   Hover und Fokus bleiben #EF750F. Höhere Spezifität und !important, damit
+   ältere Regeln nicht überschreiben.
+   ========================================================================== */
+
+/* Eingabefelder: schwarzer Rahmen und schwarzer Text */
+body.theme-light .input-group input[type="text"],
+body.theme-light #start,
+body.theme-light #destination {
+    border: 1.5px solid #000000 !important;
+    color: #000000 !important;
+}
+
+/* Platzhalter: schwarz, volle Deckkraft */
+body.theme-light .input-group input[type="text"]::placeholder,
+body.theme-light #start::placeholder,
+body.theme-light #destination::placeholder {
+    color: #000000 !important;
+    opacity: 1 !important;
+}
+
+/* Hover und Fokus: Rahmen #EF750F */
+body.theme-light .input-group input[type="text"]:hover,
+body.theme-light .input-group input[type="text"]:focus,
+body.theme-light .input-group input[type="text"]:active,
+body.theme-light #start:hover,
+body.theme-light #start:focus,
+body.theme-light #start:active,
+body.theme-light #destination:hover,
+body.theme-light #destination:focus,
+body.theme-light #destination:active {
+    border-color: #EF750F !important;
+}
+
+/* Buttons: Rahmen in #EF750F (wie die Icons), Text schwarz (Such-Button bleibt weiß) */
+body.theme-light .btn-secondary,
+body.theme-light .ticket-btn,
+body.theme-light .btn-submit {
+    border: 1.5px solid #EF750F !important;
+}
+
+body.theme-light .btn-secondary,
+body.theme-light .ticket-btn {
+    color: #000000 !important;
+}
+
+/* Aktive Verkehrsmittel-Chips: Hintergrund #FFF7ED.
+   !important, weil eine ältere Regel (blaugrauer Hintergrund) sonst gewinnt. */
+body.theme-light .product-chip input:checked + .chip-card,
+body.theme-light .product-chip input:checked + .chip-card:hover {
+    background-color: #FFF7ED !important;
+}
+
+/* Verkehrsmittel-Chips: inaktiv wie X-Button (#EF750F), aktiv #EF750F.
+   !important, weil ältere Regeln sonst gewinnen. */
+body.theme-light .product-chip .chip-card {
+    border: 1.5px solid #EF750F !important;
+}
+
+body.theme-light .product-chip input:checked + .chip-card,
+body.theme-light .product-chip input:checked + .chip-card:hover,
+body.theme-light .product-chip:has(input:checked) .chip-card {
+    border: 1.5px solid #EF750F !important;
+    box-shadow: none !important;
+}
+
+/* ==========================================================================
+   Aktive Verkehrsmittel-Chips in #EF750F
+   ========================================================================== */
+
+/* Aktiver Zustand über Input (:checked), Klassen oder aria-Attribute */
+body.theme-light .product-chip input:checked + .chip-card,
+body.theme-light .product-chip.is-active .chip-card,
+body.theme-light .product-chip.is-selected .chip-card,
+body.theme-light .product-chip [aria-pressed="true"] .chip-card,
+body.theme-light .product-chip [aria-checked="true"] .chip-card {
+    border-color: #EF750F !important;
+    background-color: #FFF7ED !important;
+}
+
+/* Text und Symbole/Icons im aktiven Chip ebenfalls in #EF750F einfärben */
+body.theme-light .product-chip input:checked + .chip-card *,
+body.theme-light .product-chip.is-active .chip-card *,
+body.theme-light .product-chip.is-selected .chip-card *,
+body.theme-light .product-chip [aria-pressed="true"] .chip-card *,
+body.theme-light .product-chip [aria-checked="true"] .chip-card * {
+    color: #EF750F !important;
+  
+}
+
