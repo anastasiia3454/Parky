@@ -93,6 +93,13 @@
             grabber.releasePointerCapture(e.pointerId);
         }
 
+        // Tipp ohne Wischen: Startposition festhalten, damit der Browser
+        // die Animation sauber von dort aus startet (sonst springt es).
+        if (!moved) {
+            sheet.style.transform = `translate3d(0, ${startOffset}px, 0)`;
+            void sheet.offsetHeight;
+        }
+
         let target;
         if (!moved) {
             target = !expanded;                

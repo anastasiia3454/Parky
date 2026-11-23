@@ -1,326 +1,89 @@
-/* ==========================================================================
-   Parky – desktop.css (nur ab 1025px)
-   Zieladresse als Pille oben links, beim Öffnen fährt die Leiste auf
-   volle Höhe. Die Leiste schließt sich nur über den Griff unten.
-   ========================================================================== */
-.desk-footer {
-    display: none; /* Handy/Tablet: Griff-Bereich ausblenden */
-}
+/* Parky – desktop.js: Seitenleiste auf dem Desktop öffnen und schließen */
+(function () {
+    const desktopQuery = window.matchMedia('(min-width: 1025px)');
+    const sidebar = document.getElementById('sidebar');
+    const body = document.getElementById('sheetBody');
+    const start = document.getElementById('start');
+    const dest = document.getElementById('destination');
+    const results = document.getElementById('results');
+    const costPanel = document.getElementById('costPanel');
+    const hint = document.getElementById('deskScrollHint');
+    const closeBtn = document.getElementById('deskClose');
+    if (!sidebar || !body || !start || !dest) return;
 
-@media (min-width: 1025px) {
+    const MOBILE_PLACEHOLDER = dest.placeholder;
+    const DESKTOP_PLACEHOLDER = 'Wo soll es hin?...';
 
-    :root {
-        --desk-inset: 16px;
-        --desk-width: 380px;
-        --desk-pill-h: 52px;
-        --desk-radius: 20px;
-        --desk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    const isDesktop = () => desktopQuery.matches;
+
+    // Scroll-Pfeil nur zeigen, solange unten noch Inhalt ist
+    function updateHint() {
+        if (!hint) return;
+        const atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 4;
+        hint.classList.toggle('is-hidden', atBottom);
     }
 
-    #layout {
-        display: block;
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        height: 100dvh;
+    function setOpen(open) {
+        sidebar.classList.toggle('desk-open', open && isDesktop());
+        // Nach der Höhenanimation (0,45 s) den Pfeil neu prüfen
+        updateHint();
+        setTimeout(updateHint, 480);
     }
 
-    #map {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        flex: none;
-        z-index: 1;
+    function hasOutput() {
+        const hasResults = results &&
+            Array.from(results.children).some(el => !el.classList.contains('empty-state'));
+        const hasCost = costPanel && !costPanel.hidden && costPanel.children.length > 0;
+        return Boolean(hasResults || hasCost);
     }
 
-    /* ---------- Seitenleiste als schwebende Karte ---------- */
-    #sidebar {
-        position: absolute;
-        top: var(--desk-inset);
-        left: var(--desk-inset);
-        width: min(var(--desk-width), calc(100vw - 2 * var(--desk-inset)));
-        height: var(--desk-pill-h);
-        padding: 0 6px;
-        border: 1px solid #262626;
-        border-radius: var(--desk-radius);
-        box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.9);
-        overflow: hidden;
-        contain: layout style;
-    }
-
-    /* Geöffnet: volle Inhaltshöhe, die von der Pillenform aus aufgeklappt wird.
-       clip-path wird nur gezeichnet, nicht neu berechnet – dadurch ruckelt es nicht. */
-    #sidebar.desk-open {
-        height: auto;
-        max-height: calc(100vh - 2 * var(--desk-inset));
-        max-height: calc(100dvh - 2 * var(--desk-inset));
-        padding: 0;
-        clip-path: inset(-40px -40px -40px -40px round 24px);
-        animation: deskReveal 0.5s var(--desk-ease) both;
-    }
-
-    @keyframes deskReveal {
-        from {
-            clip-path: inset(-40px -40px calc(100% - 52px) -40px round 20px);
-        }
-        to {
-            clip-path: inset(-40px -40px -40px -40px round 24px);
+    function syncMode() {
+        dest.placeholder = isDesktop() ? DESKTOP_PLACEHOLDER : MOBILE_PLACEHOLDER;
+        if (!isDesktop()) {
+            sidebar.classList.remove('desk-open');
+        } else if (start.value.trim() || hasOutput()) {
+            setOpen(true);
         }
     }
+    desktopQuery.addEventListener('change', syncMode);
+    syncMode();
 
-    .sheet-body {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        flex: 1 1 auto;
-        min-height: 0;
-        width: 100%;
-        height: 100%;
-        gap: 8px;
-        padding: 0;
-        overflow: hidden;
-    }
+    // Öffnen: Fokus in der Leiste oder Enter im Zielfeld
+    sidebar.addEventListener('focusin', () => setOpen(true));
+    dest.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') setOpen(true);
+    });
 
-    #sidebar.desk-open .sheet-body {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0;
-        padding: 20px 22px 12px;
-        height: auto;
-        overflow-y: auto;
-        overflow-x: hidden;
-        overscroll-behavior: contain;
+    // Schließen nur durch den Nutzer: Griff unten oder Escape.
+    // Klicks auf die Karte schließen die Leiste bewusst nicht.
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            if (document.activeElement && sidebar.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+            setOpen(false);
+        });
     }
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !isDesktop() || !sidebar.classList.contains('desk-open')) return;
+        if (document.activeElement) document.activeElement.blur();
+        setOpen(false);
+    });
 
-    .sidebar-header {
-        display: flex;
-        align-items: center;
-        flex: 0 0 auto;
-        margin: 0 0 0 6px;
+    // Scroll-Pfeil: ein Stück nach unten scrollen
+    if (hint) {
+        hint.addEventListener('click', () => {
+            body.scrollBy({ top: body.clientHeight * 0.8, behavior: 'smooth' });
+        });
     }
+    body.addEventListener('scroll', updateHint, { passive: true });
+    window.addEventListener('resize', updateHint);
 
-    #sidebar.desk-open .sheet-body > * {
-        animation: deskContentIn 0.3s var(--desk-ease) both;
-    }
-
-    @keyframes deskContentIn {
-        from {
-            opacity: 0;
-            transform: translateY(8px);
-        }
-        to {
-            opacity: 1;
-            transform: none;
-        }
-    }
-
-    .brand-logo {
-        height: 28px;
-    }
-
-    #sidebar.desk-open .sidebar-header {
-        margin: 0 0 22px;
-    }
-
-    #sidebar.desk-open .brand-logo {
-        height: 40px;
-    }
-
-    #routeForm {
-        display: flex;
-        align-items: center;
-        flex: 1 1 auto;
-        min-width: 0;
-        height: 100%;
-    }
-
-    #sidebar.desk-open #routeForm {
-        display: block;
-        height: auto;
-    }
-
-    /* ---------- Ruhezustand: nur die Zieladresse, über die volle Breite ---------- */
-    #sidebar:not(.desk-open) .sheet-body > :not(.sidebar-header):not(#routeForm),
-    #sidebar:not(.desk-open) #routeForm > :not(.input-group--dest),
-    #sidebar:not(.desk-open) .input-group--dest > :not(input):not(label) {
-        display: none !important;
-    }
-
-    #sidebar:not(.desk-open) .input-group--dest {
-        flex: 1 1 auto;
-        min-width: 0;
-        margin: 0;
-    }
-
-    #sidebar:not(.desk-open) .input-group--dest label {
-        display: none;
-    }
-
-    #sidebar:not(.desk-open) .input-group--dest input[type="text"] {
-        height: 40px;
-        padding: 0 16px;
-        border: none !important;
-        border-radius: var(--desk-radius);
-        background-color: #262626 !important;
-        color: #ffffff !important;
-        font-size: 0.92rem;
-        box-shadow: none;
-        animation: none;
-    }
-
-    #sidebar:not(.desk-open) .input-group--dest input[type="text"]::placeholder {
-        color: #d4d4d4;
-        opacity: 1;
-    }
-
-    /* ---------- Einheitlicher Radius für Vorschläge und Verlauf ---------- */
-    #sidebar .recent-searches-container {
-        border-radius: var(--desk-radius);
-    }
-
-    #sidebar .recent-chip {
-        border-radius: var(--desk-radius);
-    }
-
-    /* ---------- Unterer Bereich: Scroll-Pfeil und Griff ---------- */
-    .desk-footer {
-        display: none;
-    }
-
-    #sidebar.desk-open .desk-footer {
-        position: relative;
-        flex: 0 0 auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0;
-        padding: 0 0 6px;
-        pointer-events: none;
-    }
-
-    .desk-scroll-hint {
-        pointer-events: auto;
-        width: 36px;
-        height: 16px;
-        display: grid;
-        place-items: center;
-        background: none;
-        border: none;
-        color: #a3a3a3;
-        cursor: pointer;
-        transition: opacity 0.25s ease;
-        animation: deskBounce 1.6s ease-in-out infinite;
-    }
-
-    .desk-scroll-hint.is-hidden {
-        visibility: hidden;
-        pointer-events: none;
-        animation: none;
-    }
-
-    .desk-scroll-hint svg {
-        width: 16px;
-        height: 16px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    .desk-handle {
-        pointer-events: auto;
-        padding: 6px 24px 2px;
-        background: none;
-        border: none;
-        cursor: pointer;
-    }
-
-    .desk-handle span {
-        display: block;
-        width: 44px;
-        height: 5px;
-        border-radius: 3px;
-        background: #d1d5db;
-        transition: background-color 0.2s ease;
-    }
-
-    .desk-handle:hover span,
-    .desk-handle:focus-visible span {
-        background: #ffffff;
-    }
-
-    .desk-handle:focus-visible {
-        outline: 2px solid #aef65c;
-        outline-offset: 2px;
-        border-radius: 3px;
-    }
-
-    @keyframes deskBounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(3px); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .desk-scroll-hint {
-            animation: none;
-        }
-    }
-
-    /* ---------- Kartenumschalter oben rechts ---------- */
-    .leaflet-top .leaflet-control.map-style-switch {
-        margin: 16px 16px 0 0;
-    }
-
-    .leaflet-top .leaflet-control.map-style-switch {
-        height: 52px;
-        box-sizing: border-box;
-        padding: 3px;
-        align-items: center;
-        border-radius: var(--desk-radius);
-    }
-
-    .leaflet-top .map-style-switch__btn {
-        padding: 2px;
-        gap: 2px;
-    }
-
-    .leaflet-top .map-style-switch__thumb {
-        width: 40px;
-        height: 40px;
-    }
-
-    /* Beschriftung entfällt, die Vorschau zeigt den Stil direkt.
-       Die dunkle Vorschau bekommt denselben Filter wie die dunkle Karte. */
-    .leaflet-top .map-style-switch__label {
-        display: none;
-    }
-
-    .leaflet-top .map-style-switch__btn[data-style="dark"] .map-style-switch__thumb img {
-        filter: brightness(0.65) invert(1) contrast(1.15) hue-rotate(200deg) saturate(0.1);
-    }
-
-    /* ---------- Pop-ups unter dem Kartenumschalter ---------- */
-    .toast-region {
-        top: calc(var(--desk-inset) + 52px + 12px);
-    }
-
-    /* ---------- Zoom dunkel, unten rechts ---------- */
-    .leaflet-control-zoom.leaflet-bar {
-        border: 1px solid #262626;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
-    }
-
-    .leaflet-control-zoom.leaflet-bar a {
-        background: #0d0d0d;
-        color: #ffffff;
-        border-bottom: 1px solid #262626;
-    }
-
-    .leaflet-control-zoom.leaflet-bar a:hover {
-        background: #171717;
-    }
-}
+    // Sobald Ergebnisse da sind, bleibt die Leiste offen
+    const observer = new MutationObserver(() => {
+        if (isDesktop() && hasOutput()) setOpen(true);
+        updateHint();
+    });
+    if (results) observer.observe(results, { childList: true, subtree: true });
+    if (costPanel) observer.observe(costPanel, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+})();
