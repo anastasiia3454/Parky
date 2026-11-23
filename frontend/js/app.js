@@ -208,7 +208,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
     try {
         const startCoords = await geocodeAddress(startText);
         const destCoords = await geocodeAddress(destText);
-        if (session !== searchSession) { status.close(); return; }
+        if (session !== searchSession) { status.update('Suche abgebrochen', { type: 'info', loading: false, duration: 5000 }); return; }
 
         status.update('Suche optimale P+R-Parkplätze …');
 
@@ -225,7 +225,7 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
             destCoords.lon,
             sliderValue
         );
-        if (session !== searchSession) { clearMapResults(); status.close(); return; }
+        if (session !== searchSession) { clearMapResults(); status.update('Suche abgebrochen', { type: 'info', loading: false, duration: 5000 }); return; }
 
         if (parkings && parkings.length > 0) {
             const n = parkings.length;
@@ -243,7 +243,11 @@ document.getElementById('routeForm').addEventListener('submit', async (e) => {
         try {
             await fetchFullIntermodalRoute(startCoords.lat, startCoords.lon, destCoords.lat, destCoords.lon);
         } finally {
-            routeStatus.close();
+            if (session !== searchSession) {
+                routeStatus.update('Suche abgebrochen', { type: 'info', loading: false, duration: 5000 });
+            } else {
+                routeStatus.close();
+            }
         }
         
     } catch (error) {

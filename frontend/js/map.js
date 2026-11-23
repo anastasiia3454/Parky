@@ -146,7 +146,19 @@ const MapStyleSwitch = L.Control.extend({
 });
 
 setMapStyle(loadSavedMapStyle(), false);
-new MapStyleSwitch().addTo(map);
+const mapSwitchControl = new MapStyleSwitch();
+mapSwitchControl.addTo(map);
+
+// Desktop: Kartenumschalter oben rechts, Zoom unten rechts.
+// Handy/Tablet bleiben wie bisher.
+const desktopMapQuery = window.matchMedia('(min-width: 1025px)');
+function placeMapControls() {
+    const desktop = desktopMapQuery.matches;
+    mapSwitchControl.setPosition(desktop ? 'topright' : 'bottomleft');
+    map.zoomControl.setPosition(desktop ? 'bottomright' : 'topleft');
+}
+placeMapControls();
+desktopMapQuery.addEventListener('change', placeMapControls);
 setMapStyle(currentMapStyle, false);
 
 let startMarker = null;

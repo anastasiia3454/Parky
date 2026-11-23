@@ -262,3 +262,66 @@
 .leaflet-interactive {
     filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.547)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.8));
 }
+
+
+
+
+/* ========================================================================== */
+
+.leaflet-top .leaflet-control.map-style-switch {
+    height: 52px;
+    box-sizing: border-box;
+    padding: 3px;
+    align-items: center;
+    border-radius: 20px;
+}
+
+.leaflet-top .map-style-switch__btn {
+    display: flex !important; /* alle Stile sichtbar, auch auf dem Handy */
+    padding: 2px;
+    gap: 2px;
+}
+
+.leaflet-top .map-style-switch__thumb {
+    width: 40px;
+    height: 40px;
+}
+
+/* Beschriftung entfällt, die vorschau zeigt den Stil direkt */
+.leaflet-top .map-style-switch__label {
+    display: none;
+}
+
+/* Die dunkle Vorschau bekommt denselben Filter wie die dunkle Karte */
+.leaflet-top .map-style-switch__btn[data-style="dark"] .map-style-switch__thumb img {
+    filter: brightness(0.65) invert(1) contrast(1.15) hue-rotate(200deg) saturate(0.1);
+}
+
+/* ---------- Zoom: dunkel wie der Umschalter ---------- */
+.leaflet-control-zoom.leaflet-bar {
+    border: 1px solid #262626;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+}
+
+.leaflet-control-zoom.leaflet-bar a {
+    background: #0d0d0d;
+    color: #ffffff;
+    border-bottom: 1px solid #262626;
+}
+
+.leaflet-control-zoom.leaflet-bar a:last-child {
+    border-bottom: none;
+}
+
+.leaflet-control-zoom.leaflet-bar a:hover {
+    background: #171717;
+}
+
+/* ---------- Pop-ups unter dem Kartenumschalter (Handy/Tablet) ---------- */
+@media (max-width: 1024px) {
+    .toast-region {
+        top: calc(80px + env(safe-area-inset-top, 0px));
+    }
+}
