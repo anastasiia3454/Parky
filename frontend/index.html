@@ -96,13 +96,16 @@
 
                     <div class="input-group input-group--dest">
                         <label for="destination">
-                            <span class="dot dest-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg></span> Zieladresse
+                            <span class="dot dest-dot"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path fill-rule="evenodd"
+                                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+                                </svg></span> Zieladresse
                         </label>
                         <input type="text" id="destination" placeholder="z. B. Friedrichstraße 10, Berlin" required
                             autocomplete="off">
                     </div>
 
-                <!--<div class="input-group slider-group">
+                    <!--<div class="input-group slider-group">
                         <div class="slider-header">
                             <label for="weightSpeed">Priorität</label>
                         </div>
@@ -113,7 +116,7 @@
                         <input type="range" id="weightSpeed" min="1" max="5" value="3">
                     </div>
                 -->
-                    
+
 
                     <div class="input-group product-filter-group">
                         <div class="slider-header">
@@ -213,7 +216,8 @@
 
                                 <!-- Regional Logo -->
                                 <label class="product-chip" title="Regional">
-                                    <input type="checkbox" value="regional,regionalExpress" checked aria-label="Regional">
+                                    <input type="checkbox" value="regional,regionalExpress" checked
+                                        aria-label="Regional">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -229,7 +233,8 @@
 
                                 <!-- Fernverkehr Logo -->
                                 <label class="product-chip" title="Fernverkehr">
-                                    <input type="checkbox" value="nationalExpress,national" checked aria-label="Fernverkehr">
+                                    <input type="checkbox" value="nationalExpress,national" checked
+                                        aria-label="Fernverkehr">
                                     <div class="chip-card">
                                         <div class="chip-icon">
                                             <svg viewBox="0 0 100 100" width="28" height="28"
@@ -299,7 +304,7 @@
         <main id="map"></main>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="js/app.js"></script>
+    <script type="module" src="js/main.js"></script>
     <script src="js/map.js"></script>
     <script src="js/desktop.js"></script>
     <script src="js/responsive.js"></script>
