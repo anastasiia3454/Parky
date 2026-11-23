@@ -67,11 +67,10 @@ function setMapStyle(key, persist = true) {
     if (persist) saveMapStyle(key);
 
     const mapContainer = map.getContainer();
-    if (key === 'dark') {
-        mapContainer.classList.add('map-dark-mode');
-    } else {
-        mapContainer.classList.remove('map-dark-mode');
-    }
+    const isLight = key === 'hot';
+
+    mapContainer.classList.toggle('map-dark-mode', !isLight);
+    document.body.classList.toggle('theme-light', isLight);
 
     document.querySelectorAll('.map-style-switch__btn').forEach(btn => {
         const active = btn.dataset.style === key;
@@ -149,13 +148,13 @@ setMapStyle(loadSavedMapStyle(), false);
 const mapSwitchControl = new MapStyleSwitch();
 mapSwitchControl.addTo(map);
 
-// Desktop: Kartenumschalter oben rechts, Zoom unten rechts.
-// Handy/Tablet bleiben wie bisher.
+// Kartenumschalter immer oben rechts. Zoom: Desktop unten rechts,
+// Handy/Tablet oben rechts, damit die Leiste ihn nicht verdeckt.
 const desktopMapQuery = window.matchMedia('(min-width: 1025px)');
 function placeMapControls() {
     const desktop = desktopMapQuery.matches;
-    mapSwitchControl.setPosition(desktop ? 'topright' : 'bottomleft');
-    map.zoomControl.setPosition(desktop ? 'bottomright' : 'topleft');
+    mapSwitchControl.setPosition('topright');
+    map.zoomControl.setPosition(desktop ? 'bottomright' : 'topright');
 }
 placeMapControls();
 desktopMapQuery.addEventListener('change', placeMapControls);
@@ -167,10 +166,6 @@ let parkingMarkers = [];
 let currentDriveRouteLayer = null;
 let currentTransitRouteLayer = null;
 let currentWalkRouteLayer = null;
-
-// Zähler gegen veraltete Zeichenvorgänge: wird bei jedem Löschen/Neuzeichnen erhöht,
-// damit eine noch ladende alte Route nicht nachträglich wieder auf der Karte erscheint
-let drawToken = 0;
 
 const mapContainer = document.getElementById('map');
 if (mapContainer && 'ResizeObserver' in window) {
@@ -284,7 +279,6 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
 }
 
 function clearMapResults() {
-    drawToken++;
     if (typeof clearTrafficOverlay === 'function') clearTrafficOverlay();
     [startMarker, destinationMarker, ...parkingMarkers,
         currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer]
@@ -354,18 +348,6 @@ function showOnlyParking(lat, lon) {
     renderParkingMarkers(lastParkings, lat, lon);
 }
 
-// Auto-Strecke im Stil der ÖPNV-Linien: heller Rand plus Linienfarbe der Routendetails (blau).
-// Die Verkehrslage liegt als dünne Linie darüber (siehe traffic.js), so bleibt die Strecke als Auto erkennbar
-// und wird nicht mit S-Bahn (grün), Fußweg (orange) oder Tram (rot) verwechselt.
-const CAR_ROUTE_COLOR = '#38bdf8';
-
-function buildCarRouteLayer(geometry) {
-    return L.featureGroup([
-        L.geoJSON(geometry, { style: { color: '#ffffff', weight: 10, opacity: 1 } }),
-        L.geoJSON(geometry, { style: { color: CAR_ROUTE_COLOR, weight: 6, opacity: 1 } })
-    ]);
-}
-
 // Jeder ÖPNV-Abschnitt in der Linienfarbe der Routen-Info, Fußwege orange und gestrichelt
 function buildLegLayers(legs) {
     if (!Array.isArray(legs) || typeof L.Polyline.fromEncoded !== 'function') return [];
@@ -401,7 +383,6 @@ async function drawFullIntermodalRoute(
     hasDrive = true,
     legs = null
 ) {
-    const token = ++drawToken;
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
     if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
@@ -422,13 +403,13 @@ async function drawFullIntermodalRoute(
     try {
         const driveRes = await fetch(driveUrl);
         const driveData = await driveRes.json();
-        if (token !== drawToken) return;
 
         if (driveData.routes && driveData.routes.length > 0) {
-            currentDriveRouteLayer = (hasDrive
-                ? buildCarRouteLayer(driveData.routes[0].geometry)
-                : L.geoJSON(driveData.routes[0].geometry, { style: { color: '#f97316', weight: 4, opacity: 0.9 } })
-            ).addTo(map);
+            currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
+                style: hasDrive
+                    ? { color: '#38bdf8', weight: 4, opacity: 0.95 }
+                    : { color: '#f97316', weight: 4, opacity: 0.9 }
+            }).addTo(map);
         }
     } catch (err) {
         console.error(hasDrive ? "Fehler beim Laden der Auto-Route:" : "Fehler beim Laden des Fußwegs zur Haltestelle:", err);
@@ -465,7 +446,6 @@ async function drawFullIntermodalRoute(
     try {
         const walkRes = await fetch(walkUrl);
         const walkData = await walkRes.json();
-        if (token !== drawToken) return;
 
         if (walkData.routes && walkData.routes.length > 0) {
             currentWalkRouteLayer = L.geoJSON(walkData.routes[0].geometry, {
@@ -489,7 +469,6 @@ async function drawFullIntermodalRoute(
 }
 
 async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
-    const token = ++drawToken;
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
     if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
@@ -503,10 +482,15 @@ async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
     try {
         const res = await fetch(url);
         const data = await res.json();
-        if (token !== drawToken) return;
 
         if (data.routes && data.routes.length > 0) {
-            currentDriveRouteLayer = buildCarRouteLayer(data.routes[0].geometry).addTo(map);
+            currentDriveRouteLayer = L.geoJSON(data.routes[0].geometry, {
+                style: {
+                    color: '#38bdf8',
+                    weight: 4,
+                    opacity: 0.9
+                }
+            }).addTo(map);
 
             const activeLayers = [currentDriveRouteLayer];
             if (startMarker) activeLayers.push(startMarker);

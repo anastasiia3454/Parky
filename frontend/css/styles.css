@@ -775,3 +775,448 @@ input[type="range"] {
 #sheetSummary {
     display: none !important;
 }
+/* ==========================================================================
+   LIGHT THEME MIT DEINER PALETTE (#edf1f7 bis #1c2433)
+   ========================================================================== */
+body.theme-light {
+    --pal-1: #edf1f7; /* Hellster Hintergrund / Surfaces */
+    --pal-2: #cfd7e5; /* Karten / Inputs / Hover */
+    --pal-3: #9ca9bd; /* Rahmen / Inaktive Elemente */
+    --pal-4: #4b5568; /* Sekundärtext / Icons */
+    --pal-5: #1c2433; /* Hauptfarbe / Primärtext / Buttons */
+
+    --bg-body: var(--pal-1);
+    --surface: var(--pal-1);
+    --surface-card: #ffffff;
+    --surface-hover: var(--pal-2);
+    --text-main: var(--pal-5);
+    --text-muted: var(--pal-4);
+    --border: var(--pal-2);
+}
+
+/* 1. Sidebar, Modals & allgemeine Texte */
+body.theme-light #sidebar,
+body.theme-light .welcome-content,
+body.theme-light .terms-info-box {
+    background: var(--pal-1) !important;
+    color: var(--pal-5) !important;
+    border-color: var(--pal-2) !important;
+}
+
+body.theme-light .welcome-content h2,
+body.theme-light .welcome-intro,
+body.theme-light .terms-label,
+body.theme-light .terms-info-box h3,
+body.theme-light .terms-info-box a,
+body.theme-light .routes__title,
+body.theme-light .route-card__option,
+body.theme-light .route-card__total,
+body.theme-light .route-detail__title,
+body.theme-light .route-detail__name,
+body.theme-light .route-detail__stop,
+body.theme-light .cost-item__info b,
+body.theme-light .cost-item__amount {
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .start-dot::before {
+    border-color: var(--pal-5);
+}
+
+body.theme-light .dest-dot svg {
+    fill: var(--pal-5);
+}
+
+/* 2. Eingabefelder */
+body.theme-light .input-group input[type="text"],
+body.theme-light .input-group input[type="datetime-local"] {
+    background-color: #ffffff !important;
+    color: var(--pal-5) !important;
+    border: 1.5px solid var(--pal-2) !important;
+    color-scheme: light;
+}
+
+body.theme-light .input-group input[type="text"]::placeholder {
+    color: var(--pal-3) !important;
+}
+
+body.theme-light .input-group input[type="text"]:focus,
+body.theme-light .input-group input[type="datetime-local"]:focus {
+    border-color: var(--pal-5) !important;
+    box-shadow: 0 0 0 3px rgba(28, 36, 51, 0.12);
+}
+
+/* 3. "Nur Deutschlandticket" & Verkehrsmittel-Chips */
+body.theme-light .ticket-btn {
+    background: #ffffff;
+    border: 1px solid var(--pal-2);
+    color: var(--pal-4);
+}
+
+body.theme-light .ticket-btn:hover,
+body.theme-light .ticket-btn.is-active {
+    background: var(--pal-5);
+    border-color: var(--pal-5);
+    color: var(--pal-1);
+}
+
+body.theme-light .chip-card {
+    background: #ffffff;
+    border: 1.5px solid var(--pal-2);
+    opacity: 0.65;
+}
+
+body.theme-light .product-chip input:checked + .chip-card {
+    background: #ffffff;
+    border-color: var(--pal-5);
+    opacity: 1;
+    box-shadow: 0 2px 6px rgba(28, 36, 51, 0.08);
+}
+
+body.theme-light .product-chip input:checked + .chip-card .chip-label {
+    color: var(--pal-5);
+}
+
+/* 4. Hin- und Rückfahrt Karte & Switch */
+body.theme-light .trip-card {
+    background: #ffffff !important;
+    border: 1.5px solid var(--pal-2) !important;
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .trip-toggle__title {
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .trip-toggle__sub,
+body.theme-light .trip-return__label {
+    color: var(--pal-4) !important;
+}
+
+body.theme-light .trip-toggle__icon {
+    color: var(--pal-5) !important;
+    background: var(--pal-1) !important;
+}
+
+/* Switch Track & Knopf (ausgeschaltet & eingeschaltet) */
+body.theme-light .trip-switch {
+    background-color: var(--pal-2) !important;
+    border: 1px solid var(--pal-3) !important;
+}
+
+body.theme-light .trip-switch::before,
+body.theme-light .trip-switch::after {
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(28, 36, 51, 0.25) !important;
+}
+
+body.theme-light .trip-toggle__input:checked + .trip-switch {
+    background-color: var(--pal-5) !important;
+    border-color: var(--pal-5) !important;
+}
+
+body.theme-light .trip-toggle__input:checked + .trip-switch::before,
+body.theme-light .trip-toggle__input:checked + .trip-switch::after {
+    background-color: var(--pal-1) !important;
+}
+
+/* 5. Hauptbuttons */
+body.theme-light .btn-submit,
+body.theme-light .btn-welcome-start {
+    background-color: var(--pal-5) !important;
+    color: var(--pal-1) !important;
+    box-shadow: none !important;
+}
+
+body.theme-light .btn-submit:not(:disabled):hover,
+body.theme-light .btn-welcome-start:not(:disabled):hover {
+    background-color: var(--pal-4) !important;
+}
+
+body.theme-light .btn-secondary {
+    background-color: #ffffff;
+    border: 1.5px solid var(--pal-2);
+    color: var(--pal-4);
+}
+
+body.theme-light .btn-secondary:hover {
+    background-color: var(--pal-2);
+    color: var(--pal-5);
+}
+
+/* 6. "Neulich gesucht" Chips */
+body.theme-light .recent-searches-container {
+    background: transparent !important;
+    border: none !important;
+    padding: 4px 0 !important;
+}
+
+body.theme-light .recent-searches-container h4 {
+    color: var(--pal-4);
+}
+
+body.theme-light .recent-chip {
+    background: #ffffff;
+    border: 1px solid var(--pal-2);
+    color: var(--pal-5);
+}
+
+body.theme-light .recent-chip:hover {
+    background: var(--pal-2);
+    border-color: var(--pal-3);
+}
+
+/* 7. Tabs, Routen-Karten & Details */
+body.theme-light .sheet-tabs {
+    background: var(--pal-2);
+    border-color: var(--pal-2);
+}
+
+body.theme-light .sheet-tab {
+    color: var(--pal-4);
+}
+
+body.theme-light .sheet-tab.is-active {
+    background: #ffffff;
+    color: var(--pal-5);
+    box-shadow: 0 1px 3px rgba(28, 36, 51, 0.1);
+}
+
+body.theme-light .route-card,
+body.theme-light .route-detail,
+body.theme-light .cost-item {
+    background: #ffffff;
+    border-color: var(--pal-2);
+}
+
+body.theme-light .route-card:hover,
+body.theme-light .route-card.is-selected,
+body.theme-light .route-detail {
+    border-color: var(--pal-5);
+    box-shadow: 0 3px 12px rgba(28, 36, 51, 0.08);
+}
+
+body.theme-light .route-card__badge {
+    background: var(--pal-1);
+    color: var(--pal-5);
+}
+
+body.theme-light .route-card__badge svg {
+    stroke: var(--pal-5);
+}
+
+body.theme-light .route-card__btn {
+    background: var(--pal-1);
+    color: var(--pal-5);
+}
+
+body.theme-light .route-card__btn:hover {
+    background: var(--pal-2);
+}
+
+body.theme-light .route-card.is-selected .route-card__btn {
+    background: var(--pal-5);
+    border-color: var(--pal-5);
+    color: var(--pal-1);
+}
+
+body.theme-light .route-detail__dot {
+    background: #ffffff;
+}
+
+body.theme-light .route-detail__total,
+body.theme-light .route-detail__time {
+    color: var(--pal-5);
+}
+
+body.theme-light .route-card__legend b {
+    color: var(--pal-5);
+}
+
+body.theme-light .cost-summary {
+    background: #ffffff;
+    border-color: var(--pal-5);
+    color: var(--pal-5);
+}
+
+body.theme-light .cost-summary b {
+    color: var(--pal-5);
+}
+
+/* 8. Karten-Steuerelemente (Zoom & Kartenstil-Switch oben rechts) */
+body.theme-light .leaflet-control.map-style-switch,
+body.theme-light .leaflet-bar a {
+    background: #ffffff !important;
+    color: var(--pal-5) !important;
+    border-color: var(--pal-2) !important;
+    box-shadow: 0 3px 10px rgba(28, 36, 51, 0.12) !important;
+}
+
+body.theme-light .leaflet-bar a:hover {
+    background: var(--pal-1) !important;
+}
+
+body.theme-light .map-style-switch__btn {
+    color: var(--pal-4) !important;
+}
+
+body.theme-light .map-style-switch__btn:hover {
+    background: var(--pal-1) !important;
+}
+
+body.theme-light .map-style-switch__btn.is-active {
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .map-style-switch__btn.is-active .map-style-switch__thumb {
+    border-color: var(--pal-5) !important;
+}
+
+/* 9. Popups & Toasts */
+body.theme-light .leaflet-popup-content-wrapper,
+body.theme-light .leaflet-popup-tip {
+    background: #ffffff;
+    color: var(--pal-5);
+    border-color: var(--pal-2);
+}
+
+body.theme-light .leaflet-popup-content b {
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .leaflet-popup-content button {
+    background-color: var(--pal-5);
+    color: var(--pal-1);
+}
+
+body.theme-light .toast {
+    background: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(28, 36, 51, 0.12);
+}
+
+/* 10. Scrollbar */
+body.theme-light * {
+    scrollbar-color: var(--pal-3) var(--pal-1);
+}
+body.theme-light ::-webkit-scrollbar-track {
+    background: var(--pal-1);
+}
+body.theme-light ::-webkit-scrollbar-thumb {
+    background: var(--pal-3);
+}
+
+/* ==========================================================================
+   1. AKTIVE RÜCKFAHRT: SCHIEFERBLAUER SCHATTEN & RAHMEN
+   ========================================================================== */
+body.theme-light .trip-card:has(.trip-toggle__input:checked) {
+    border-color: #1c2433 !important;
+    box-shadow: 0 0 0 3px rgba(28, 36, 51, 0.15) !important;
+}
+
+/* Fallback für Browser, die :has() nicht unterstützen */
+body.theme-light .trip-card.is-active,
+body.theme-light .trip-card input:checked ~ * {
+    border-color: #1c2433 !important;
+}
+
+
+/* ==========================================================================
+   2. MAP TILE FILTER FÜR DAS HELLE THEME
+   ========================================================================== */
+body.theme-light .leaflet-tile-pane {
+    /* Harmonischer, augenfreundlicher Filter passend zur Schiefer-Palette */
+    filter: brightness(0.97) contrast(1.05) saturate(0.65);
+}
+
+/* ==========================================================================
+   FINALE KOMPONENTEN & ZIELPUNKT-PIN ANPASSUNG (LIGHT THEME)
+   ========================================================================== */
+
+/* 1. Zielpunkt-Marker (Pin) auf Schwarz-Weiß umstellen */
+body.theme-light .parky-marker--end path {
+    fill: #1c2433 !important;
+    stroke: #ffffff !important;
+    stroke-width: 2px !important;
+}
+
+body.theme-light .parky-marker--end circle {
+    fill: #ffffff !important;
+}
+
+/* 2. Autovervollständigung / Suchergebnisse (Dropdown-Boxen) */
+body.theme-light .autocomplete-suggestions,
+body.theme-light .search-suggestions,
+body.theme-light .autocomplete-dropdown {
+    background: #ffffff !important;
+    border: 1.5px solid var(--pal-2) !important;
+    color: var(--pal-5) !important;
+    box-shadow: 0 4px 16px rgba(28, 36, 51, 0.12) !important;
+}
+
+body.theme-light .autocomplete-suggestion,
+body.theme-light .suggestion-item {
+    background: #ffffff !important;
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .autocomplete-suggestion:hover,
+body.theme-light .suggestion-item:hover {
+    background: var(--pal-1) !important;
+}
+
+/* 3. Routen-Karten & Direktfahrt-Karten (`.route-card`) */
+body.theme-light .routes__head,
+body.theme-light .routes__sub {
+    color: var(--pal-4) !important;
+}
+
+body.theme-light .route-card {
+    background: #ffffff !important;
+    border: 1.5px solid var(--pal-2) !important;
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .route-card:hover {
+    border-color: var(--pal-5) !important;
+    box-shadow: 0 4px 14px rgba(28, 36, 51, 0.08) !important;
+}
+
+body.theme-light .route-card.is-selected,
+body.theme-light .route-card.is-selected--car {
+    border-color: var(--pal-5) !important;
+    box-shadow: 0 0 0 3px rgba(28, 36, 51, 0.15) !important;
+}
+
+/* 4. Alle Auswählen-Buttons in den Routenkarten */
+body.theme-light .route-card__btn {
+    background: var(--pal-1) !important;
+    color: var(--pal-5) !important;
+    border: 1.5px solid var(--pal-2) !important;
+}
+
+body.theme-light .route-card__btn:hover {
+    background: var(--pal-2) !important;
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .route-card.is-selected .route-card__btn,
+body.theme-light .route-card.is-selected--car .route-card__btn {
+    background: var(--pal-5) !important;
+    color: var(--pal-1) !important;
+    border-color: var(--pal-5) !important;
+}
+
+/* 5. Legenden & Metadaten in Routenkarten */
+body.theme-light .route-card__place,
+body.theme-light .route-card__total small,
+body.theme-light .route-card__legend li {
+    color: var(--pal-4) !important;
+}
+
+/* 6. Suchleiste oben rechts (falls vorhanden) */
+body.theme-light .leaflet-top .leaflet-control-geocoder,
+body.theme-light .map-top-search input {
+    background: #ffffff !important;
+    color: var(--pal-5) !important;
+    border: 1.5px solid var(--pal-2) !important;
+}

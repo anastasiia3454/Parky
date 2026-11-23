@@ -1,0 +1,238 @@
+/* =========================================================
+   Augenfreundliches Light-Theme (Standard-Kartenansicht)
+   ========================================================= */
+
+body.theme-light {
+    --bg-main: #f6f7f5;          /* Warmes, blendfreies Off-White */
+    --bg-surface: #edf0ec;       /* Eingabefelder & Cards */
+    --bg-surface-hover: #e2e7e0; /* Hover-Zustände */
+    --border-subtle: #d5dcd3;    /* Weiche Rahmenlinien */
+    --text-primary: #1c241e;     /* Tiefes Anthrazit statt hartem Schwarz */
+    --text-secondary: #525e55;   /* Gedämpftes Grau-Grün */
+    --accent-green: #4d8b1f;     /* Kontrastreiches Grün für helle Flächen */
+    --accent-lime: #9ee34b;      /* Markenakzent */
+}
+
+/* Sidebar & Sheet (Desktop + Mobile) */
+body.theme-light #sidebar,
+body.theme-light .sheet-body,
+body.theme-light .sheet-grabber,
+body.theme-light .desk-footer {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+}
+
+body.theme-light .sheet-handle,
+body.theme-light .desk-handle span {
+    background-color: #bcc5b9;
+}
+
+body.theme-light .sheet-summary {
+    color: var(--text-secondary);
+}
+
+/* Eingabefelder & Trip-Card */
+body.theme-light .input-group label,
+body.theme-light .slider-header label,
+body.theme-light .trip-toggle__title {
+    color: var(--text-primary);
+}
+
+body.theme-light .trip-toggle__sub,
+body.theme-light .trip-return__label {
+    color: var(--text-secondary);
+}
+
+body.theme-light input[type="text"],
+body.theme-light input[type="datetime-local"],
+body.theme-light .trip-card {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+}
+
+body.theme-light input[type="text"]::placeholder {
+    color: #7b877e;
+}
+
+body.theme-light input[type="text"]:focus,
+body.theme-light input[type="datetime-local"]:focus {
+    background-color: #ffffff;
+    border-color: var(--accent-green);
+    outline: none;
+}
+
+/* Verkehrsmittel-Chips & Deutschlandticket-Button */
+body.theme-light .chip-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+}
+
+body.theme-light .product-chip input:checked + .chip-card {
+    background-color: #dff2c8;
+    border-color: var(--accent-green);
+}
+
+body.theme-light .ticket-btn {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+}
+
+body.theme-light .ticket-btn.is-active,
+body.theme-light .ticket-btn[aria-pressed="true"] {
+    background-color: #dff2c8;
+    border-color: var(--accent-green);
+    color: #163308;
+}
+
+/* Action-Buttons */
+body.theme-light .btn-submit {
+    background-color: var(--accent-lime);
+    color: #141c0d;
+    font-weight: 700;
+}
+
+body.theme-light .btn-secondary {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+}
+
+body.theme-light .btn-secondary:hover {
+    background-color: var(--bg-surface-hover);
+}
+
+/* Tabs & Ergebnis-Container */
+body.theme-light .sheet-tabs {
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+body.theme-light .sheet-tab {
+    color: var(--text-secondary);
+}
+
+body.theme-light .sheet-tab.is-active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent-green);
+}
+
+body.theme-light .results-container,
+body.theme-light .cost-panel,
+body.theme-light .route-card,
+body.theme-light .parking-card {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+}
+
+/* Karten-Controls (Zoom & Kartenstil-Umschalter) */
+body.theme-light .map-style-switch,
+body.theme-light .leaflet-bar a {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+}
+
+body.theme-light .leaflet-bar a:hover {
+    background-color: var(--bg-surface-hover);
+}
+
+body.theme-light .map-style-switch__label {
+    background-color: rgba(246, 247, 245, 0.92);
+    color: var(--text-primary);
+}
+
+/* Leaflet Popups */
+body.theme-light .leaflet-popup-content-wrapper,
+body.theme-light .leaflet-popup-tip {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    box-shadow: 0 6px 20px rgba(28, 36, 30, 0.14);
+}
+/* ==========================================================================
+   EXAKTE OVERRIDES FÜR ROUNDTRIP.CSS & SUGGEST.CSS (LIGHT THEME)
+   ========================================================================== */
+
+/* 1. Hin- und Rückfahrt Karte (exakte Spezifität aus roundtrip.css) */
+body.theme-light .input-group .trip-card {
+    background: #ffffff !important;
+    border: 1.5px solid var(--pal-2) !important;
+}
+
+body.theme-light .input-group .trip-card:has(.trip-toggle__input:checked) {
+    border-color: var(--pal-5) !important;
+    box-shadow: 0 0 0 3px rgba(28, 36, 51, 0.15) !important;
+}
+
+body.theme-light .input-group .trip-toggle {
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .trip-toggle__icon {
+    background: var(--pal-1) !important;
+    color: var(--pal-4) !important;
+}
+
+body.theme-light .input-group .trip-card:has(.trip-toggle__input:checked) .trip-toggle__icon {
+    background: var(--pal-5) !important;
+    color: var(--pal-1) !important;
+}
+
+/* Switch Track & Punkt */
+body.theme-light .trip-switch {
+    background: var(--pal-2) !important;
+    border-color: var(--pal-3) !important;
+}
+
+body.theme-light .trip-switch::after {
+    background: #ffffff !important;
+}
+
+body.theme-light .trip-toggle__input:checked + .trip-switch {
+    background: var(--pal-5) !important;
+    border-color: var(--pal-5) !important;
+}
+
+body.theme-light .trip-toggle__input:checked + .trip-switch::after {
+    background: var(--pal-1) !important;
+}
+
+/* Rückfahrt-Zeitbereich & Trennlinie */
+body.theme-light .input-group .trip-return {
+    border-top-color: var(--pal-2) !important;
+}
+
+body.theme-light .input-group .trip-return .trip-return__label {
+    color: var(--pal-4) !important;
+}
+
+body.theme-light .input-group .trip-return input[type="datetime-local"] {
+    background: var(--pal-1) !important;
+    color: var(--pal-5) !important;
+    border: 1.5px solid var(--pal-2) !important;
+    color-scheme: light;
+}
+
+body.theme-light .input-group .trip-return input[type="datetime-local"]:focus {
+    background: #ffffff !important;
+    border-color: var(--pal-5) !important;
+}
+
+/* 2. Adress-Autovervollständigung (exakte Klassen aus suggest.css) */
+body.theme-light .suggest-list {
+    background: #ffffff !important;
+    border: 1.5px solid var(--pal-2) !important;
+    box-shadow: 0 10px 25px -5px rgba(28, 36, 51, 0.15) !important;
+}
+
+body.theme-light .suggest-item {
+    color: var(--pal-5) !important;
+}
+
+body.theme-light .suggest-item:hover,
+body.theme-light .suggest-item.is-active {
+    background: var(--pal-1) !important;
+    color: var(--pal-5) !important;
+}

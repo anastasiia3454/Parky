@@ -1033,3 +1033,39 @@
     color: #00bfff !important;
     border: 1.5px solid #00bfff !important;
 }
+/* ==========================================================================
+   ÖPNV-CHIPS (LEICHTBLAU) & MOBILES SUCHFELD (LIGHT)
+   ========================================================================== */
+
+/* 1. Ausgewählte Verkehrsmittel-Chips in Leichtblau passend zum Switch */
+body.theme-light .product-chip input:checked + .chip-card {
+    background-color: #dce4f0 !important;   /* Sanftes Leichtblau passend zur Palette */
+    border-color: #4b5568 !important;       /* Schieferblauer Rahmen wie beim Switch */
+    opacity: 1 !important;
+    box-shadow: 0 2px 6px rgba(28, 36, 51, 0.08) !important;
+}
+
+body.theme-light .product-chip input:checked + .chip-card .chip-icon {
+    color: #1c2433 !important;
+}
+
+body.theme-light .product-chip input:checked + .chip-card .chip-label {
+    color: #1c2433 !important;
+}
+
+/* 2. Mobiles Suchfeld ("Wo soll es hin?...") & Sheet-Grabber hell färben */
+body.theme-light .sheet-grabber {
+    background-color: #edf1f7 !important;
+    border-color: #cfd7e5 !important;
+}
+
+body.theme-light .sheet-summary {
+    background-color: #ffffff !important;
+    color: #4b5568 !important;
+    border: 1.5px solid #cfd7e5 !important;
+    box-shadow: none !important;
+}
+
+body.theme-light .sheet-summary span {
+    color: #4b5568 !important;
+}
