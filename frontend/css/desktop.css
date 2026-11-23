@@ -3,6 +3,10 @@
    Zieladresse als Pille oben links, beim Öffnen fährt die Leiste auf
    volle Höhe. Die Leiste schließt sich nur über den Griff unten.
    ========================================================================== */
+.desk-footer {
+    display: none; /* Handy/Tablet: Griff-Bereich ausblenden */
+}
+
 @media (min-width: 1025px) {
 
     :root {
