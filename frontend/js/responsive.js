@@ -46,6 +46,14 @@
         if (!isSheetMode()) return;
         if (e.pointerType === 'mouse' && e.button !== 0) return;
 
+        // Tipp auf den Griff darf keinen Fokus in ein Eingabefeld legen
+        // (sonst geht beim Aufklappen die Tastatur auf).
+        e.preventDefault();
+        const active = document.activeElement;
+        if (active && active !== document.body && typeof active.blur === 'function') {
+            active.blur();
+        }
+
         dragging = true;
         moved = false;
         startY = lastY = e.clientY;
