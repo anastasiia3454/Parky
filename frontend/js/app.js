@@ -915,7 +915,8 @@ document.getElementById('btnReset').addEventListener('click', () => {
     if (sheetTabs) sheetTabs.hidden = true;
     setCostsTabVisible(false);
 
-    document.getElementById('start').focus();
+    // Nur am Desktop: auf dem Handy würde dadurch die Tastatur aufgehen
+    if (window.matchMedia('(min-width: 1025px)').matches) document.getElementById('start').focus();
 });
 
 function isCarFilterChecked() {

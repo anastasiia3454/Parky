@@ -22,6 +22,7 @@
     let lastY = 0;
     let lastTime = 0;
     let velocity = 0;
+    let ignoreClicksUntil = 0;
 
     const isSheetMode = () => mq.matches;
     const peekHeight = () => (probe ? probe.offsetHeight : 104);
@@ -41,6 +42,17 @@
         sheet.style.transform = '';
         if (summary) summary.style.removeProperty('--p');
     }
+
+    // Nach einem Tipp auf den Griff kann der Browser den Klick an ein Element
+    // unter dem Finger weiterreichen (z. B. Zurücksetzen oder Eingabefeld). Das verhindern wir.
+    const swallowAfterTap = (e) => {
+        if (performance.now() < ignoreClicksUntil) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+    document.addEventListener('click', swallowAfterTap, true);
+    document.addEventListener('mousedown', swallowAfterTap, true);
 
     grabber.addEventListener('pointerdown', (e) => {
         if (!isSheetMode()) return;
@@ -104,6 +116,7 @@
         // Tipp ohne Wischen: Startposition festhalten, damit der Browser
         // die Animation sauber von dort aus startet (sonst springt es).
         if (!moved) {
+            ignoreClicksUntil = performance.now() + 500;
             sheet.style.transform = `translate3d(0, ${startOffset}px, 0)`;
             void sheet.offsetHeight;
         }
