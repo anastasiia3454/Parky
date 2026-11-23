@@ -3,6 +3,17 @@ import { hasDriveLeg } from '../logic/routeFilter.js';
 
 // `map` und `L` (Leaflet) kommen aus der Karten-Datei bzw. dem Leaflet-Script (globaler Scope).
 
+// Eigene Ebene: Die Verkehrslage liegt immer über den Routenlinien (400) und unter den Markern (600),
+// egal in welcher Reihenfolge die Anfragen fertig werden.
+const TRAFFIC_PANE = 'trafficPane';
+
+function ensureTrafficPane() {
+    if (map.getPane(TRAFFIC_PANE)) return;
+    const pane = map.createPane(TRAFFIC_PANE);
+    pane.style.zIndex = 450;
+    pane.style.pointerEvents = 'none';
+}
+
 let trafficOverlayLayers = [];
 let trafficRequestId = 0;
 
@@ -48,6 +59,7 @@ export async function colorRouteByTraffic(fromLat, fromLon, toLat, toLon) {
         const ratios = await response.json();
         if (requestId !== trafficRequestId) return;
 
+        ensureTrafficPane();
         for (let s = 0; s < count - 1; s++) {
             const values = [ratios[s] && ratios[s].ratio, ratios[s + 1] && ratios[s + 1].ratio]
                 .filter(v => v !== null && v !== undefined);
@@ -58,9 +70,10 @@ export async function colorRouteByTraffic(fromLat, fromLon, toLat, toLon) {
             if (segment.length < 2) continue;
 
             const layer = L.polyline(segment, {
+                pane: TRAFFIC_PANE,
                 color: trafficColor(ratio),
-                weight: 4,
-                opacity: 0.95,
+                weight: 3,
+                opacity: 1,
                 lineCap: 'round'
             }).addTo(map);
             trafficOverlayLayers.push(layer);

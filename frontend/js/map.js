@@ -354,6 +354,18 @@ function showOnlyParking(lat, lon) {
     renderParkingMarkers(lastParkings, lat, lon);
 }
 
+// Auto-Strecke im Stil der ÖPNV-Linien: heller Rand plus Linienfarbe der Routendetails (blau).
+// Die Verkehrslage liegt als dünne Linie darüber (siehe traffic.js), so bleibt die Strecke als Auto erkennbar
+// und wird nicht mit S-Bahn (grün), Fußweg (orange) oder Tram (rot) verwechselt.
+const CAR_ROUTE_COLOR = '#38bdf8';
+
+function buildCarRouteLayer(geometry) {
+    return L.featureGroup([
+        L.geoJSON(geometry, { style: { color: '#ffffff', weight: 10, opacity: 1 } }),
+        L.geoJSON(geometry, { style: { color: CAR_ROUTE_COLOR, weight: 6, opacity: 1 } })
+    ]);
+}
+
 // Jeder ÖPNV-Abschnitt in der Linienfarbe der Routen-Info, Fußwege orange und gestrichelt
 function buildLegLayers(legs) {
     if (!Array.isArray(legs) || typeof L.Polyline.fromEncoded !== 'function') return [];
@@ -413,11 +425,10 @@ async function drawFullIntermodalRoute(
         if (token !== drawToken) return;
 
         if (driveData.routes && driveData.routes.length > 0) {
-            currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
-                style: hasDrive
-                    ? { color: '#38bdf8', weight: 4, opacity: 0.95 }
-                    : { color: '#f97316', weight: 4, opacity: 0.9 }
-            }).addTo(map);
+            currentDriveRouteLayer = (hasDrive
+                ? buildCarRouteLayer(driveData.routes[0].geometry)
+                : L.geoJSON(driveData.routes[0].geometry, { style: { color: '#f97316', weight: 4, opacity: 0.9 } })
+            ).addTo(map);
         }
     } catch (err) {
         console.error(hasDrive ? "Fehler beim Laden der Auto-Route:" : "Fehler beim Laden des Fußwegs zur Haltestelle:", err);
@@ -495,13 +506,7 @@ async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
         if (token !== drawToken) return;
 
         if (data.routes && data.routes.length > 0) {
-            currentDriveRouteLayer = L.geoJSON(data.routes[0].geometry, {
-                style: {
-                    color: '#38bdf8',
-                    weight: 4,
-                    opacity: 0.9
-                }
-            }).addTo(map);
+            currentDriveRouteLayer = buildCarRouteLayer(data.routes[0].geometry).addTo(map);
 
             const activeLayers = [currentDriveRouteLayer];
             if (startMarker) activeLayers.push(startMarker);
