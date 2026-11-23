@@ -12,6 +12,10 @@ export function clearTrafficOverlay() {
     trafficOverlayLayers = [];
 }
 
+// map.js (normales Script) ruft clearTrafficOverlay() in clearMapResults() über den
+// globalen Scope auf. Ohne diese Zeile bliebe die Verkehrs-Einfärbung der alten Route stehen.
+window.clearTrafficOverlay = clearTrafficOverlay;
+
 function trafficColor(ratio) {
     if (ratio === null || ratio === undefined) return null;
     if (ratio >= 0.85) return '#22c55e';   // flüssig

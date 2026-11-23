@@ -168,6 +168,10 @@ let currentDriveRouteLayer = null;
 let currentTransitRouteLayer = null;
 let currentWalkRouteLayer = null;
 
+// Zähler gegen veraltete Zeichenvorgänge: wird bei jedem Löschen/Neuzeichnen erhöht,
+// damit eine noch ladende alte Route nicht nachträglich wieder auf der Karte erscheint
+let drawToken = 0;
+
 const mapContainer = document.getElementById('map');
 if (mapContainer && 'ResizeObserver' in window) {
     new ResizeObserver(() => map.invalidateSize()).observe(mapContainer);
@@ -280,6 +284,7 @@ function setDestinationMarker(lat, lon, name = 'Dein Zielpunkt') {
 }
 
 function clearMapResults() {
+    drawToken++;
     if (typeof clearTrafficOverlay === 'function') clearTrafficOverlay();
     [startMarker, destinationMarker, ...parkingMarkers,
         currentDriveRouteLayer, currentTransitRouteLayer, currentWalkRouteLayer]
@@ -384,6 +389,7 @@ async function drawFullIntermodalRoute(
     hasDrive = true,
     legs = null
 ) {
+    const token = ++drawToken;
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
     if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
@@ -404,6 +410,7 @@ async function drawFullIntermodalRoute(
     try {
         const driveRes = await fetch(driveUrl);
         const driveData = await driveRes.json();
+        if (token !== drawToken) return;
 
         if (driveData.routes && driveData.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(driveData.routes[0].geometry, {
@@ -447,6 +454,7 @@ async function drawFullIntermodalRoute(
     try {
         const walkRes = await fetch(walkUrl);
         const walkData = await walkRes.json();
+        if (token !== drawToken) return;
 
         if (walkData.routes && walkData.routes.length > 0) {
             currentWalkRouteLayer = L.geoJSON(walkData.routes[0].geometry, {
@@ -470,6 +478,7 @@ async function drawFullIntermodalRoute(
 }
 
 async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
+    const token = ++drawToken;
     if (currentDriveRouteLayer) map.removeLayer(currentDriveRouteLayer);
     if (currentTransitRouteLayer) map.removeLayer(currentTransitRouteLayer);
     if (currentWalkRouteLayer) map.removeLayer(currentWalkRouteLayer);
@@ -483,6 +492,7 @@ async function drawDirectCarRoute(startLat, startLon, destLat, destLon) {
     try {
         const res = await fetch(url);
         const data = await res.json();
+        if (token !== drawToken) return;
 
         if (data.routes && data.routes.length > 0) {
             currentDriveRouteLayer = L.geoJSON(data.routes[0].geometry, {
