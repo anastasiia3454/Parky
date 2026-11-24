@@ -5,13 +5,13 @@
 
 body.theme-light {
     /* Flächen */
-    --bg-main: #fffdfa;             /* warmes Off-White */
-    --bg-surface: #fff7ed;          /* Eingabefelder, Karten */
+    --bg-main: #ffffff;             /* warmes Off-White */
+    --bg-surface: #ffffff;          /* Eingabefelder, Karten */
     --bg-surface-hover: #ffedd5;    /* Hover */
     --bg-white: #ffffff;
 
     /* Rahmen & Text */
-    --border-subtle: #fed7aa;       /* weiches Orange-Grau */
+    --border-subtle: #fff1e2;       /* weiches Orange-Grau */
     --text-primary: #000000;
     --text-secondary: #000000;
     --text-placeholder: #9a8677;
@@ -19,7 +19,7 @@ body.theme-light {
     /* Akzente */
     --accent: #ea580c;              /* Orange für Rahmen, Linien, Fokus (guter Kontrast auf Weiß) */
     --accent-bright: #f97316;       /* Hauptbutton, Schalter */
-    --accent-soft: #ffedd5;         /* gewählte Chips */
+    --accent-soft: #fbf1e4;         /* gewählte Chips */
     --accent-on-soft: #7c2d12;      /* Text auf gewählten Chips */
 
     /* Palette für roundtrip.css und suggest.css (dort fest verdrahtet) */
@@ -42,7 +42,7 @@ body.theme-light .desk-footer {
 
 body.theme-light .sheet-handle,
 body.theme-light .desk-handle span {
-    background-color: #fdba74;
+    background-color: #fff3e6;
 }
 
 body.theme-light .sheet-summary {
@@ -220,7 +220,7 @@ body.theme-light .trip-toggle__input:checked + .trip-switch {
 }
 
 body.theme-light .trip-toggle__input:checked + .trip-switch::after {
-    background: #1f1408 !important;
+    background: #ffffff !important;
 }
 
 /* Zeitbereich & Trennlinie */
@@ -382,7 +382,7 @@ body.theme-light #destination:active {
 body.theme-light .btn-secondary,
 body.theme-light .ticket-btn,
 body.theme-light .btn-submit {
-    border: 1.5px solid #EF750F !important;
+    border: 1.5px solid #ffc99d !important;
 }
 
 body.theme-light .btn-secondary,
@@ -476,4 +476,23 @@ body.theme-light .product-chip .chip-card::after {
 
 body.theme-light .product-chip {
     background: transparent !important;
+}
+
+/* Standard (dunkles Theme): helles Logo ausblenden */
+.logo-light {
+    display: none;
+}
+
+/* Helles Theme: dunkles Logo ausblenden, helles einblenden */
+body.theme-light .logo-dark {
+    display: none;
+}
+
+.logo-dark {
+    height: 30px;
+}
+
+body.theme-light .logo-light {
+    display: block;
+    height: 30px;
 }
