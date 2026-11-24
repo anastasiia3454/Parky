@@ -496,3 +496,21 @@ body.theme-light .logo-light {
     display: block;
     height: 30px;
 }
+
+/* Scrollleiste der Seitenleiste: neutral grau statt orange */
+#sidebar *::-webkit-scrollbar-thumb,
+#sidebar::-webkit-scrollbar-thumb {
+    background: #9ca3af39 ;
+    border-radius: 999px;
+}
+
+#sidebar *::-webkit-scrollbar-track,
+#sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Firefox und moderne Browser */
+#sidebar,
+#sidebar * {
+    scrollbar-color: #9ca3af39 transparent;
+}
