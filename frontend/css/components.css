@@ -798,10 +798,7 @@
     transition: background 0.2s ease;
 }
 
-.ticket-btn:hover {
-    background: #1a0f08;
-    border-color: white;
-}
+
 
 /* ==========================================================================
    5. VERKEHRSMITTEL CHIPS (BLOCK & SLIDER CONTAINER)

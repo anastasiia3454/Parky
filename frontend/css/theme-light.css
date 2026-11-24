@@ -5,16 +5,16 @@
 
 body.theme-light {
     /* Flächen */
-    --bg-main: #ffffff;             /* warmes Off-White */
-    --bg-surface: #fbfbfb;          /* Eingabefelder, Karten */
+    --bg-main: #fffdfa;             /* warmes Off-White */
+    --bg-surface: #fff7ed;          /* Eingabefelder, Karten */
     --bg-surface-hover: #ffedd5;    /* Hover */
     --bg-white: #ffffff;
 
     /* Rahmen & Text */
-    --border-subtle: #FED7AA;       /* weiches Orange-Grau */
+    --border-subtle: #fed7aa;       /* weiches Orange-Grau */
     --text-primary: #000000;
     --text-secondary: #000000;
-    --text-placeholder: #000000;
+    --text-placeholder: #9a8677;
 
     /* Akzente */
     --accent: #ea580c;              /* Orange für Rahmen, Linien, Fokus (guter Kontrast auf Weiß) */
@@ -410,27 +410,70 @@ body.theme-light .product-chip:has(input:checked) .chip-card {
     box-shadow: none !important;
 }
 
-/* ==========================================================================
-   Aktive Verkehrsmittel-Chips in #EF750F
-   ========================================================================== */
-
-/* Aktiver Zustand über Input (:checked), Klassen oder aria-Attribute */
-body.theme-light .product-chip input:checked + .chip-card,
+/* Aktive Verkehrsmittel-Chips: Rahmen #EF750F.
+   Der aktive Zustand kann über :checked, eine Klasse oder aria-pressed gesetzt sein,
+   deshalb mehrere Selektoren. Der schwarze Rahmen kommt von einer älteren Regel. */
+body.theme-light .product-chip:has(input:checked),
+body.theme-light .product-chip:has(input:checked) .chip-card,
+body.theme-light .product-chip:has(input:checked) > *,
+body.theme-light .product-chip.is-active,
 body.theme-light .product-chip.is-active .chip-card,
+body.theme-light .product-chip.is-selected,
 body.theme-light .product-chip.is-selected .chip-card,
-body.theme-light .product-chip [aria-pressed="true"] .chip-card,
-body.theme-light .product-chip [aria-checked="true"] .chip-card {
-    border-color: #EF750F !important;
+body.theme-light .product-chip.checked,
+body.theme-light .product-chip.checked .chip-card,
+body.theme-light .product-chip [aria-pressed="true"],
+body.theme-light .product-chip [aria-checked="true"],
+body.theme-light .product-chip .chip-card.is-active,
+body.theme-light .product-chip .chip-card.is-selected {
+    box-shadow: none !important;
+}
+
+/* Aktiver Chip (per JavaScript gesetzt: Klasse .is-active auf .chip-card): Rahmen #EF750F */
+body.theme-light .chip-card.is-active {
+    border: 2px solid #EF750F !important;
     background-color: #FFF7ED !important;
+    box-shadow: none !important;
 }
 
-/* Text und Symbole/Icons im aktiven Chip ebenfalls in #EF750F einfärben */
-body.theme-light .product-chip input:checked + .chip-card *,
-body.theme-light .product-chip.is-active .chip-card *,
-body.theme-light .product-chip.is-selected .chip-card *,
-body.theme-light .product-chip [aria-pressed="true"] .chip-card *,
-body.theme-light .product-chip [aria-checked="true"] .chip-card * {
-    color: #EF750F !important;
-  
+/* Eingabefelder und Zielfeld-Container: weißer Hintergrund statt schwarz.
+   !important, weil die Desktop-Regel das Zielfeld sonst dunkel färbt. */
+body.theme-light input[type="text"],
+body.theme-light #start,
+body.theme-light #destination,
+body.theme-light .input-group--dest,
+body.theme-light #sidebar:not(.desk-open) .input-group--dest,
+body.theme-light #sidebar:not(.desk-open) .input-group--dest input[type="text"] {
+    background-color: #ffffff !important;
 }
 
+/* Die schwarze Fläche um das Zielfeld ist der Wrapper .input-group, nicht das Feld selbst. */
+body.theme-light #sidebar .input-group {
+    background-color: #ffffff !important;
+}
+
+/* Blaue Rechtecke um die Icons der Verkehrsmittel entfernen: Rahmen, Umriss und Schatten
+   bei allen Elementen innerhalb des Chips. Die Chip-Karte selbst bleibt unverändert. */
+body.theme-light .product-chip .chip-card *,
+body.theme-light .product-chip .chip-icon,
+body.theme-light .product-chip .chip-icon * {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Eckige Umrisse um jedes Verkehrsmittel entfernen: betrifft das äußere Chip-Element
+   (.product-chip) und seine Pseudo-Elemente. Die runde Chip-Karte (.chip-card) bleibt. */
+body.theme-light .product-chip,
+body.theme-light .product-chip::before,
+body.theme-light .product-chip::after,
+body.theme-light .product-chip .chip-card::before,
+body.theme-light .product-chip .chip-card::after {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+body.theme-light .product-chip {
+    background: transparent !important;
+}

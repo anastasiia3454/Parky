@@ -783,7 +783,7 @@ body.theme-light {
     --pal-2: #cfd7e5; /* Karten / Inputs / Hover */
     --pal-3: #9ca9bd; /* Rahmen / Inaktive Elemente */
     --pal-4: #4b5568; /* Sekundärtext / Icons */
-    --pal-5: #1c2433; /* Hauptfarbe / Primärtext / Buttons */
+    --pal-5: #ffffff; /* Hauptfarbe / Primärtext / Buttons */
 
     --bg-body: var(--pal-1);
     --surface: var(--pal-1);
@@ -855,7 +855,6 @@ body.theme-light .ticket-btn {
 
 body.theme-light .ticket-btn:hover,
 body.theme-light .ticket-btn.is-active {
-    background: var(--pal-5);
     border-color: var(--pal-5);
     color: var(--pal-1);
 }
